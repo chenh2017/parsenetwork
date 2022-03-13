@@ -17,13 +17,11 @@ navbar:
 
 reference:
 - title: "Run App"
-  desc: >
-    Functions for installing Spark components and managing
-    connections to Spark
+  desc: "Function for running a shiny app of network."
   contents: 
   - run_app
 - title: "Writing Datas to DB"
-  desc: "Functions for writing data into a sqlite3 database"
+  desc: "Function for writing data into a sqlite3 database."
   contents:
   - data2db
 
