@@ -87,21 +87,6 @@
 <li>
   <a href="../articles/main.html">Get started</a>
 </li>
-<li class="dropdown">
-  <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
-    Articles
-     
-    <span class="caret"></span>
-  </a>
-  <ul class="dropdown-menu" role="menu">
-    <li>
-      <a href="../articles/network.html">Network</a>
-    </li>
-    <li>
-      <a href="../articles/trouble.html">Troubleshooting</a>
-    </li>
-  </ul>
-</li>
 <li>
   <a href="../reference/index.html">Reference</a>
 </li>
@@ -124,7 +109,7 @@
   <div class="col-md-9 contents">
     <div class="page-header">
     <h1>Run the Shiny Application</h1>
-    <small class="dont-index">Source: <a href='https://github.com/chenh2017/parsenetwork/blob/master/R/run_app.R'><code>R/run_app.R</code></a></small>
+    <small class="dont-index">Source: <a href='https://github.com/celehs/parsenetwork.git/blob/master/R/run_app.R'><code>R/run_app.R</code></a></small>
     <div class="hidden name"><code>run_app.Rd</code></div>
     </div>
 
@@ -133,9 +118,10 @@
     </div>
 
     <pre class="usage"><span class='fu'>run_app</span><span class='op'>(</span>
+  <span class='va'>db_path</span>,
   onStart <span class='op'>=</span> <span class='cn'>NULL</span>,
   options <span class='op'>=</span> <span class='fu'><a href='https://rdrr.io/r/base/list.html'>list</a></span><span class='op'>(</span><span class='op'>)</span>,
-  enableBookmarking <span class='op'>=</span> <span class='cn'>NULL</span>,
+  enableBookmarking <span class='op'>=</span> <span class='st'>"server"</span>,
   uiPattern <span class='op'>=</span> <span class='st'>"/"</span>,
   <span class='va'>...</span>
 <span class='op'>)</span></pre>
@@ -143,6 +129,10 @@
     <h2 class="hasAnchor" id="arguments"><a class="anchor" href="#arguments"></a>Arguments</h2>
     <table class="ref-arguments">
     <colgroup><col class="name" /><col class="desc" /></colgroup>
+    <tr>
+      <th>db_path</th>
+      <td><p>path to database.</p></td>
+    </tr>
     <tr>
       <th>onStart</th>
       <td><p>A function that will be called before the app is actually run.
@@ -190,7 +180,7 @@ See `?golem::get_golem_options` for more details.</p></td>
 
       <footer>
       <div class="copyright">
-  <p>Developed by AUTHOR_FIRST AUTHOR_LAST.</p>
+  <p>Developed by PARSE AUTHOR_LAST.</p>
 </div>
 
 <div class="pkgdown">
