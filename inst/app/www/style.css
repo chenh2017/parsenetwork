@@ -1,0 +1,96 @@
+
+/*body*/
+
+.content-wrapper{
+  padding-top: 0;
+  background-color: #222d32;
+}
+
+
+/* header */
+
+.skin-blue .main-header .navbar, .skin-blue .main-header .logo {
+  background-color: #222d32;
+}
+
+.title_text{
+  color: white;
+  margin: 10px 30px 10px 20px;
+}
+
+
+.header-button{
+  background-color: #3c8dbc;
+  color: white;
+  border-color: #2E84B6
+}
+.header-button:hover{
+  background: rgba(0,0,0,.1);
+  color: #f6f6f6;
+}
+
+
+.shiny-notification {
+             position:fixed;
+             top: 50px;
+             left: 698pt;
+             }
+             
+
+
+/* sidebar */
+
+/*
+.sidebar-menu > li{
+  background: #03256C;
+}
+*/
+
+.skin-blue .sidebar-menu>li.active>a, .skin-blue .sidebar-menu>li.menu-open>a{
+  background: #007bff;
+}
+.skin-blue .sidebar-menu>li:hover>a{
+  background: #39A9CB;
+}
+
+.skin-blue .sidebar a {
+    color: white;
+    font-size: 1.5rem;
+}
+         
+             
+button#goButton {
+    margin-top: 20px;
+}
+
+
+
+
+
+/* network */
+
+#legendnetwork_proxy_nodes{
+    border: white;
+    border-color: white;
+    border-width: 3px;
+    /* background: white; */
+    border-style: outset;
+}
+
+
+
+
+
+/* bs modal */
+
+.modal-content{
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
+#clicked_node_title > h3 {
+  margin-top: 0;
+  margin-bottom: 20px;
+}
+
+

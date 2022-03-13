@@ -1,5 +1,6 @@
 #' Run the Shiny Application
 #'
+#' @param db_path path to database.
 #' @param ... arguments to pass to golem_opts. 
 #' See `?golem::get_golem_options` for more details.
 #' @inheritParams shiny::shinyApp
@@ -8,16 +9,17 @@
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options 
 run_app <- function(
+  db_path,
   onStart = NULL,
   options = list(), 
-  enableBookmarking = NULL,
+  enableBookmarking = "server",
   uiPattern = "/",
   ...
 ) {
   with_golem_options(
     app = shinyApp(
       ui = app_ui,
-      server = app_server,
+      server = app_server(db_path),
       onStart = onStart,
       options = options, 
       enableBookmarking = enableBookmarking, 

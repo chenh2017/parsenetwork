@@ -5,14 +5,17 @@
 \title{Run the Shiny Application}
 \usage{
 run_app(
+  db_path,
   onStart = NULL,
   options = list(),
-  enableBookmarking = NULL,
+  enableBookmarking = "server",
   uiPattern = "/",
   ...
 )
 }
 \arguments{
+\item{db_path}{path to database.}
+
 \item{onStart}{A function that will be called before the app is actually run.
 This is only needed for \code{shinyAppObj}, since in the \code{shinyAppDir}
 case, a \code{global.R} file can be used for this purpose.}

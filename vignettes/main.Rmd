@@ -1,0 +1,119 @@
+---
+title: "Data for network"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Data for network}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+# Required data
+
+## edge
+
+| from        | to             | weight |
+| ----------- | -------------- | ------ |
+| PheCode:008 | PheCode:008.51 | 0.81   |
+| PheCode:008 | RXNORM:123     | 0.62   |
+
+- **from**: center nodes.
+- **to**: collected nodes.
+- **weight**: the weight of the collection. eg. cosine similarity.
+
+## dict_cui
+
+Dictionary for cui nodes. demo:
+
+| id       | term            | semantic_type                 | group1 | group2     | category              |
+| -------- | --------------- | ----------------------------- | ------ | ---------- | --------------------- |
+| C0000167 | 17 Ketosteroids | Pharmacologic Substance       | CHEM   | Drug       | Chemicals & Drugs NLP |
+| C0002716 | amyloids        | Biologically Active Substance | CHEM   | Ignore_cui | Chemicals & Drugs NLP |
+
+- **id**: The unique key. (eg. C0002716)
+- **term**: Description/Term/String of the ID. Only one term for ID. (eg. amyloids)
+- **semantic_type**: semantic type. (eg. Biologically Active Substance)
+- **group1**: eg.  "PROC"   "CHEM"   "DISO"   "PHYS"   "PHEN"   "ACTI"
+- **group2**: eg. "Ignore_cui" "Procedure"  "Disease"    "Drug"       "Lab"
+- **category**: User specified group name. eg. 
+
+```
+ [1]                            Procedure NLP             
+ [3] Chemicals & Drugs NLP      Disease NLP               
+ [5] Drug NLP                   Lab NLP                   
+ [7] PHYS NLP                   Phenomena NLP             
+ [9] Activities & Behaviors NLP 
+```
+
+## dict_codified
+
+Dictionary for codified nodes. demo:
+
+| id | term | semantic_type | group1 | group2 | category | level1 | level2 | level3 | level4 |
+| -------------- | -------------------- | ------------------- | -------------- | ------- | ---------------- | -------------------- | ------------------- | ----------------- | ------ |
+| PheCode:008    | intestinal infection | infectious diseases | PheCode        | Disease | Disease Codified | intestinal infection |                     |                   |        |
+| PheCode:008.5  | bacterial enteritis  | infectious diseases | PheCode        | Disease | Disease Codified | intestinal infection | bacterial enteritis |                   |        |
+| PheCode:008.51 | intestinal e.coli    | infectious diseases | PheCode        | Disease | Disease Codified | intestinal infection | bacterial enteritis | intestinal e.coli |        |
+| RXNORM:1000104 | incobotulinumtoxina | hypoglycemic agents | RXNORM        | Drug | Drug Codified | glucagon-like peptide- | liraglutide | |        |
+| CCS:177        | computerized axial tomography ct scan head | Miscellaneous diagnostic and therapeutic procedures | CCS        | Procedure | Procedure Codified | miscellaneous diagnostic and therapeutic procedures | computerized axial tomography ct scan | computerized axial tomography ct scan head |        |
+| LOINC:10374-7   | helmet cells | Blood smear finding | LOINC        | Lab | Lab Codified | Hematology | Blood smear finding | Erythrocyte shape | helmet cells |
+
+- **id**: The unique key. (eg. PheCode:008)
+- **term**: Description/Term/String of the ID. (eg. intestinal infection)
+- **semantic type**: semantic type/group. (eg. infectious diseases)
+- **group1**: eg. "CCS" "PheCode" "RxNorm" "Lab"
+- **group2**: eg.  "Procedure"  "Disease"    "Drug"       "Lab"
+- **category**: eg. "Procedure Codified"  "Disease Codified"    "Drug Codified"       "Lab Codified"
+- **level1~4**:	The descriptions for hierarchical levels of `id` column. eg. The hierarchy of PheCode:008.51:   
+	* level1 is the top level (intestinal infection: PheCode:008)
+	* level2 is the second level (bacterial enteritis: PheCode:008.5)
+	* level3 is the bottom level itself (intestinal e.coli: PheCode:008.51)
+	* level4 is NA
+
+# Optional data
+
+## synonyms
+
+| id  | synonyms |
+| ---- | -------- |
+|C0000167|17 Ketosteroids|
+|C0000167|17-Ketosteroids|
+|C0000167|17-Oxosteroids|
+|C0000167|17 Oxosteroids|
+|C0000167|17-Oxosteroid|
+|C0000167|17 ketosteroid|
+|C0000167|17-ketosteroid|
+
+- **id**: center nodes' ID. (eg. C3205666)
+- **synonyms**: The synonyms.
+
+## rollup
+
+The first 2 column must be `id` and `cui`.
+
+| id              | cui                             | term                   | semantic type                 | semantic group |
+| --------------- | ------------------------------- | ---------------------- | ----------------------------- | -------------- |
+| center nodes ID | The cuis rollup to center nodes |                        |                               |                |
+| C3205666        | C0039226                        | Enteric-coated tablets | Biomedical or Dental Material | CHEM           |
+
+- **id**: center nodes' ID. (eg. C3205666)
+- **cui**: The cui id rolluped to center nodes.
+- **...**: optional columns.
+
+## More data
+
+The first column must be `id`.
+
+| id           | LabChemTestName |
+| ------------ | --------------- |
+| LOINC:8122-4 | ABS CD3(096925) |
+
+- **id**: center nodes' ID. (eg. LOINC:8122-4)
+- **...**: optional columns.
+
