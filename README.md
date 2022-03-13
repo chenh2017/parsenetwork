@@ -52,7 +52,7 @@ must use `library(parsenetwork)` beforehand, instead of directly running
 `parsenetwork::run_app()`.
 
 ``` r
-library(kesernetwork)
+library(parsenetwork)
 run_app(db_path = "path/to/db")
 ```
 

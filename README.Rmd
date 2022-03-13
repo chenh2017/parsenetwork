@@ -60,7 +60,7 @@ This is a basic example which shows you how to run the `parsenetwork` app. Remem
 
 
 ```{r eval=FALSE}
-library(kesernetwork)
+library(parsenetwork)
 run_app(db_path = "path/to/db")
 ```
 

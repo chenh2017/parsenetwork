@@ -16,12 +16,14 @@ navbar:
       href: https://celehs.github.io
 
 reference:
-- title: Run the app
-  contents:
+- title: "Run App"
+  desc: >
+    Functions for installing Spark components and managing
+    connections to Spark
+  contents: 
   - run_app
-
-# - title: Dataset
-#   contents:
-#   - df1
-#   - df2
+- title: "Writing Datas to DB"
+  desc: "Functions for writing data into a sqlite3 database"
+  contents:
+  - data2db
 
