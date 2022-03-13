@@ -1,0 +1,24 @@
+{
+    "id": "52FE30C3",
+    "path": "~/Packages/parsenetwork/dev/01_start.R",
+    "project_path": "dev/01_start.R",
+    "type": "r_source",
+    "hash": "1602158920",
+    "contents": "",
+    "dirty": true,
+    "created": 1647060445738.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "cursorPosition": "22,24",
+        "scrollLine": "13"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1647060440,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1647148011804,
+    "read_only": false,
+    "read_only_alternatives": []
+}
