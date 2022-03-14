@@ -83,6 +83,8 @@
 <div id="edge" class="section level2">
 <h2 class="hasAnchor">
 <a href="#edge" class="anchor"></a>edge</h2>
+<p>A data.frame of “from-to-weight” or RDS file with matrix, sparse matrix(dgCMatrix-class) is acceptable for <code>edge</code> data.</p>
+<p>demo 1</p>
 <table class="table">
 <thead><tr class="header">
 <th>from</th>
@@ -108,8 +110,37 @@
 <li>
 <strong>to</strong>: collected nodes.</li>
 <li>
-<strong>weight</strong>: the weight of the collection. eg. cosine similarity.</li>
+<strong>weight</strong>: the weight of the collection. e.g. cosine similarity.</li>
 </ul>
+<p>demo 2</p>
+<table class="table">
+<thead><tr class="header">
+<th></th>
+<th align="center">PheCode:008</th>
+<th align="center">PheCode:008.51</th>
+<th align="center">RXNORM:123</th>
+</tr></thead>
+<tbody>
+<tr class="odd">
+<td><strong>PheCode:008</strong></td>
+<td align="center">1</td>
+<td align="center">0.81</td>
+<td align="center">0.63</td>
+</tr>
+<tr class="even">
+<td><strong>PheCode:008.51</strong></td>
+<td align="center">0.81</td>
+<td align="center">1</td>
+<td align="center">0.57</td>
+</tr>
+<tr class="odd">
+<td><strong>RXNORM:123</strong></td>
+<td align="center">0.63</td>
+<td align="center">0.57</td>
+<td align="center">1</td>
+</tr>
+</tbody>
+</table>
 </div>
 <div id="dict_cui" class="section level2">
 <h2 class="hasAnchor">
@@ -153,17 +184,17 @@
 </table>
 <ul>
 <li>
-<strong>id</strong>: The unique key. (eg. C0002716)</li>
+<strong>id</strong>: The unique key. (e.g. C0002716)</li>
 <li>
-<strong>term</strong>: Description/Term/String of the ID. Only one term for ID. (eg. amyloids)</li>
+<strong>term</strong>: Description/Term/String of the ID. Only one term for ID. (e.g. amyloids)</li>
 <li>
-<strong>semantic_type</strong>: semantic type. (eg. Biologically Active Substance)</li>
+<strong>semantic_type</strong>: semantic type. (e.g. Biologically Active Substance)</li>
 <li>
-<strong>group1</strong>: eg. “PROC” “CHEM” “DISO” “PHYS” “PHEN” “ACTI”</li>
+<strong>group1</strong>: e.g. “PROC” “CHEM” “DISO” “PHYS” “PHEN” “ACTI”</li>
 <li>
-<strong>group2</strong>: eg. “Ignore_cui” “Procedure” “Disease” “Drug” “Lab”</li>
+<strong>group2</strong>: e.g. “Ignore_cui” “Procedure” “Disease” “Drug” “Lab”</li>
 <li>
-<strong>category</strong>: User specified group name. eg.</li>
+<strong>category</strong>: User specified group name. e.g. </li>
 </ul>
 <pre><code> [1]                            Procedure NLP             
  [3] Chemicals &amp; Drugs NLP      Disease NLP               
@@ -277,19 +308,19 @@
 </table>
 <ul>
 <li>
-<strong>id</strong>: The unique key. (eg. PheCode:008)</li>
+<strong>id</strong>: The unique key. (e.g. PheCode:008)</li>
 <li>
-<strong>term</strong>: Description/Term/String of the ID. (eg. intestinal infection)</li>
+<strong>term</strong>: Description/Term/String of the ID. (e.g. intestinal infection)</li>
 <li>
-<strong>semantic type</strong>: semantic type/group. (eg. infectious diseases)</li>
+<strong>semantic type</strong>: semantic type/group. (e.g. infectious diseases)</li>
 <li>
-<strong>group1</strong>: eg. “CCS” “PheCode” “RxNorm” “Lab”</li>
+<strong>group1</strong>: e.g. “CCS” “PheCode” “RxNorm” “Lab”</li>
 <li>
-<strong>group2</strong>: eg. “Procedure” “Disease” “Drug” “Lab”</li>
+<strong>group2</strong>: e.g. “Procedure” “Disease” “Drug” “Lab”</li>
 <li>
-<strong>category</strong>: eg. “Procedure Codified” “Disease Codified” “Drug Codified” “Lab Codified”</li>
+<strong>category</strong>: e.g. “Procedure Codified” “Disease Codified” “Drug Codified” “Lab Codified”</li>
 <li>
-<strong>level1~4</strong>: The descriptions for hierarchical levels of <code>id</code> column. eg. The hierarchy of PheCode:008.51:
+<strong>level1~4</strong>: The descriptions for hierarchical levels of <code>id</code> column. e.g. The hierarchy of PheCode:008.51:
 <ul>
 <li>level1 is the top level (intestinal infection: PheCode:008)</li>
 <li>level2 is the second level (bacterial enteritis: PheCode:008.5)</li>
@@ -344,7 +375,7 @@
 </table>
 <ul>
 <li>
-<strong>id</strong>: center nodes’ ID. (eg. C3205666)</li>
+<strong>id</strong>: center nodes’ ID. (e.g. C3205666)</li>
 <li>
 <strong>synonyms</strong>: The synonyms.</li>
 </ul>
@@ -361,26 +392,17 @@
 <th>semantic type</th>
 <th>semantic group</th>
 </tr></thead>
-<tbody>
-<tr class="odd">
-<td>center nodes ID</td>
-<td>The cuis rollup to center nodes</td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="even">
+<tbody><tr class="odd">
 <td>C3205666</td>
 <td>C0039226</td>
 <td>Enteric-coated tablets</td>
 <td>Biomedical or Dental Material</td>
 <td>CHEM</td>
-</tr>
-</tbody>
+</tr></tbody>
 </table>
 <ul>
 <li>
-<strong>id</strong>: center nodes’ ID. (eg. C3205666)</li>
+<strong>id</strong>: center nodes’ ID. (e.g. C3205666)</li>
 <li>
 <strong>cui</strong>: The cui id rolluped to center nodes.</li>
 <li>
@@ -403,7 +425,7 @@
 </table>
 <ul>
 <li>
-<strong>id</strong>: center nodes’ ID. (eg. LOINC:8122-4)</li>
+<strong>id</strong>: center nodes’ ID. (e.g. LOINC:8122-4)</li>
 <li>
 <strong>…</strong>: optional columns.</li>
 </ul>

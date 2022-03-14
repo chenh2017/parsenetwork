@@ -133,7 +133,7 @@
     <colgroup><col class="name" /><col class="desc" /></colgroup>
     <tr>
       <th>tname</th>
-      <td><p>chr. The table name of the data.  A table name can contain numeric alphabets and underline (eg: table_1 ). The table name  should begin with an alphabet. The 8 table names below are specified:
+      <td><p>string. The table name of the data.  A table name can contain numeric alphabets and underline (e.g. table_1 ). The table name  should begin with an alphabet. The 8 table names below are specified:
 * "edge": matrix data for network.
 * "dict_cui": dict of cui nodes.
 * "dict_codified": dict of codified nodes.
@@ -143,19 +143,19 @@
     </tr>
     <tr>
       <th>db</th>
-      <td><p>chr. The database path to write to. eg. "./test.db".</p></td>
+      <td><p>string. The database path to write to. e.g. "./test.db".</p></td>
     </tr>
     <tr>
       <th>file</th>
-      <td><p>chr. The file path to read from. rds, csv, tsv, txt will be OK.</p></td>
+      <td><p>string. The file path to read from. rds, csv, tsv, txt will be OK.</p></td>
     </tr>
     <tr>
       <th>sep</th>
-      <td><p>chr. Default "rds" or single character used to separate fields within a record (eg. "\t" ",", "|", ";").</p></td>
+      <td><p>string. Default "rds" or single character used to separate fields within a record (e.g. "\t" ",", "|", ";").</p></td>
     </tr>
     <tr>
       <th>overwrite</th>
-      <td><p>bool. Default FALSE. If TRUE, The existing table will be overwrite.</p></td>
+      <td><p>logical. Default FALSE. If TRUE, The existing table will be overwrite.</p></td>
     </tr>
     <tr>
       <th>cutoff</th>
@@ -163,11 +163,11 @@
     </tr>
     <tr>
       <th>directed</th>
-      <td><p>bool. Default FALSE. Parameter for "edge" data. If TRUE, the edge of the network will be with arrow. Not currently available.</p></td>
+      <td><p>logical. Default FALSE. Parameter for "edge" data. If TRUE, the edge of the network will be with arrow. Not currently available.</p></td>
     </tr>
     <tr>
       <th>title</th>
-      <td><p>chr. Default NULL. Parameter for more data. The title for more information data.</p></td>
+      <td><p>string. Default NULL. Parameter for more data. The title for more information data.</p></td>
     </tr>
     </table>
 
