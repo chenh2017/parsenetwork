@@ -43,10 +43,18 @@ writeDB <- function(df, tname, db, overwrite = FALSE){
 # }
 
 edge2db <- function(df, db, cutoff = 0){
-  # df <- data.frame(df)
-  # colnames(df) <- rownames(df)
-  # df$id <- rownames(df)
-  # df <- reshape2::melt(df)
+  if(class(df)[1]=="matrix"){
+    df <- reshape2::melt(df)
+    df <- data.frame(from = as.vector(df$Var1),
+                     to = as.vector(df$Var2),
+                     weight = df$value)
+  }
+  if (class(df)[1]=="dgCMatrix"){
+    summ <- Matrix::summary(df)
+    df<-data.frame(from = rownames(df)[summ$i],
+                   to = colnames(df)[summ$j],
+                   weight = summ$x)
+  }
   df <- df[df$weight > cutoff,]
   ids <- unique(c(df$from, df$to))
   df_index <- data.frame("index" = 1:length(ids), "id" = sort(ids))
@@ -140,7 +148,7 @@ getCosFromDB <- function(n, ids, db){
              row.names = NULL)
 }
 
-getDetailsFromDB <- function(db = "test/test.db", id){
+getDetailsFromDB <- function(db, id){
   details <- getData("details", db)
   for(t in details$tname){
     df <- getData("details", db)
