@@ -32,7 +32,7 @@ remotes::install_github("celehs/parsenetwork")
 ### Build the database
 
 ``` r
-library(kesernetwork)
+library(parsenetwork)
 # required steps
 data2db("edge", "path/to/db", "path/to/datafile")
 data2db("dict_cui", "path/to/db", "path/to/datafile")
