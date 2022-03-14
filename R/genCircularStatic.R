@@ -46,7 +46,7 @@ circularPreData <- function(data){
 
 circularStatic <- function(df_edges, 
                            dict.combine, 
-                           color.df){
+                           ColorsCirc){
   
       nodes = df_edges$to
       data = data.frame(
@@ -67,8 +67,8 @@ circularStatic <- function(df_edges,
         base_data = circularData$base_data
         
         # Make the plot
-        p = ggplot(data, aes(x=as.factor(.data$id), y=.data$value, fill=match(.data$group, color.df$name))) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
-          scale_fill_manual(values = color.df$color) +
+        p = ggplot(data, aes(x=as.factor(.data$id), y=.data$value, fill=match(.data$group, ColorsCirc$group))) +       # Note that id is a factor. If x is numeric, there is some space between the first bar
+          scale_fill_manual(values = ColorsCirc$color) +
           geom_bar(aes(x=as.factor(.data$id), y=.data$value, fill=.data$group), stat="identity", alpha=0.5) +
           
           # Add a val=.8/.6/.4/.2 lines. I do it at the beginning to make sur barplots are OVER it.

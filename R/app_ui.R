@@ -115,7 +115,7 @@ app_ui <- function(request) {
     shinyBS::bsModal(
       id = "instruction", title = "Instruction", trigger = "instruct",
       size = "large",
-      includeMarkdown("/home/hui/Project/CUInetwork/doc/documentation.md")
+      includeMarkdown(app_sys("app/doc/documentation.md"))
     ),
     
     # content ============================================
@@ -204,7 +204,7 @@ app_ui <- function(request) {
   )
   
   # controlbar =========================================
-  controlbar <- shinydashboardPlus::dashboardControlbar(
+  controlbar <- shinydashboardPlus::dashboardControlbar(width = 300,
     id = "controlbar",
     shinydashboardPlus::controlbarMenu(
       id = "controlbarMenu",
@@ -246,7 +246,6 @@ app_ui <- function(request) {
         uiOutput("ui_color")
       )
     ),
-    width = 300,
     skin = "light"
   )
   

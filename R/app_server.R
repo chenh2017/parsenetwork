@@ -17,10 +17,7 @@ app_server <- function(db_path){
     ids <- getData("ids", db)
     dict.combine <- getData("node", db)
     input_table <- dplyr::left_join(ids[,"id", drop = FALSE], dict.combine[, c("id", "term", "category")], by = "id")
-    
-    color.df = readRDS("/home/hui/Project/CUInetwork/color_df.RDS")
-    load("/home/hui/Project/CUInetwork/attrs.RData")
-    
+
     node_num_cutoff = 500
     
     ## Note ================
@@ -28,8 +25,6 @@ app_server <- function(db_path){
     showNotification("Click 'Help' button to open step-by-step instructions.",
                      duration = 3, type = "warning"
     )
-    
-    steps = data.table::fread("/home/hui/Project/CUInetwork/doc/steps.tsv")
     
     observeEvent(input$help, {
       if (input$sidebarmenu == "Network") {
@@ -416,7 +411,7 @@ app_server <- function(db_path){
     output$circular <- renderPlot({
       print("circular")
       node_now = selected_id()
-      circularStatic(df_plots(), dict.combine, color.df)
+      circularStatic(df_plots(), dict.combine, ColorsCirc)
     })
     
     
