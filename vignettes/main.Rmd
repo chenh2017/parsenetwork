@@ -18,6 +18,11 @@ knitr::opts_chunk$set(
 
 ## edge
 
+A data.frame of "from-to-weight" or RDS file with matrix, sparse matrix(dgCMatrix-class) is acceptable for `edge` data.
+
+
+demo 1
+
 | from        | to             | weight |
 | ----------- | -------------- | ------ |
 | PheCode:008 | PheCode:008.51 | 0.81   |
@@ -25,7 +30,15 @@ knitr::opts_chunk$set(
 
 - **from**: center nodes.
 - **to**: collected nodes.
-- **weight**: the weight of the collection. eg. cosine similarity.
+- **weight**: the weight of the collection. e.g. cosine similarity.
+
+demo 2
+
+|                | PheCode:008 | PheCode:008.51 | RXNORM:123 |
+| -----------    |:-----------:|:--------------:|:----------:|
+| **PheCode:008**    | 1           | 0.81           | 0.63       |
+| **PheCode:008.51** | 0.81        | 1              | 0.57       |
+| **RXNORM:123**     | 0.63        | 0.57           | 1          |
 
 ## dict_cui
 
@@ -36,12 +49,12 @@ Dictionary for cui nodes. demo:
 | C0000167 | 17 Ketosteroids | Pharmacologic Substance       | CHEM   | Drug       | Chemicals & Drugs NLP |
 | C0002716 | amyloids        | Biologically Active Substance | CHEM   | Ignore_cui | Chemicals & Drugs NLP |
 
-- **id**: The unique key. (eg. C0002716)
-- **term**: Description/Term/String of the ID. Only one term for ID. (eg. amyloids)
-- **semantic_type**: semantic type. (eg. Biologically Active Substance)
-- **group1**: eg.  "PROC"   "CHEM"   "DISO"   "PHYS"   "PHEN"   "ACTI"
-- **group2**: eg. "Ignore_cui" "Procedure"  "Disease"    "Drug"       "Lab"
-- **category**: User specified group name. eg. 
+- **id**: The unique key. (e.g. C0002716)
+- **term**: Description/Term/String of the ID. Only one term for ID. (e.g. amyloids)
+- **semantic_type**: semantic type. (e.g. Biologically Active Substance)
+- **group1**: e.g.  "PROC"   "CHEM"   "DISO"   "PHYS"   "PHEN"   "ACTI"
+- **group2**: e.g. "Ignore_cui" "Procedure"  "Disease"    "Drug"       "Lab"
+- **category**: User specified group name. e.g. 
 
 ```
  [1]                            Procedure NLP             
@@ -64,13 +77,13 @@ Dictionary for codified nodes. demo:
 | CCS:177        | computerized axial tomography ct scan head | Miscellaneous diagnostic and therapeutic procedures | CCS        | Procedure | Procedure Codified | miscellaneous diagnostic and therapeutic procedures | computerized axial tomography ct scan | computerized axial tomography ct scan head |        |
 | LOINC:10374-7   | helmet cells | Blood smear finding | LOINC        | Lab | Lab Codified | Hematology | Blood smear finding | Erythrocyte shape | helmet cells |
 
-- **id**: The unique key. (eg. PheCode:008)
-- **term**: Description/Term/String of the ID. (eg. intestinal infection)
-- **semantic type**: semantic type/group. (eg. infectious diseases)
-- **group1**: eg. "CCS" "PheCode" "RxNorm" "Lab"
-- **group2**: eg.  "Procedure"  "Disease"    "Drug"       "Lab"
-- **category**: eg. "Procedure Codified"  "Disease Codified"    "Drug Codified"       "Lab Codified"
-- **level1~4**:	The descriptions for hierarchical levels of `id` column. eg. The hierarchy of PheCode:008.51:   
+- **id**: The unique key. (e.g. PheCode:008)
+- **term**: Description/Term/String of the ID. (e.g. intestinal infection)
+- **semantic type**: semantic type/group. (e.g. infectious diseases)
+- **group1**: e.g. "CCS" "PheCode" "RxNorm" "Lab"
+- **group2**: e.g.  "Procedure"  "Disease"    "Drug"       "Lab"
+- **category**: e.g. "Procedure Codified"  "Disease Codified"    "Drug Codified"       "Lab Codified"
+- **level1~4**:	The descriptions for hierarchical levels of `id` column. e.g. The hierarchy of PheCode:008.51:   
 	* level1 is the top level (intestinal infection: PheCode:008)
 	* level2 is the second level (bacterial enteritis: PheCode:008.5)
 	* level3 is the bottom level itself (intestinal e.coli: PheCode:008.51)
@@ -90,7 +103,7 @@ Dictionary for codified nodes. demo:
 |C0000167|17 ketosteroid|
 |C0000167|17-ketosteroid|
 
-- **id**: center nodes' ID. (eg. C3205666)
+- **id**: center nodes' ID. (e.g. C3205666)
 - **synonyms**: The synonyms.
 
 ## rollup
@@ -99,10 +112,9 @@ The first 2 column must be `id` and `cui`.
 
 | id              | cui                             | term                   | semantic type                 | semantic group |
 | --------------- | ------------------------------- | ---------------------- | ----------------------------- | -------------- |
-| center nodes ID | The cuis rollup to center nodes |                        |                               |                |
 | C3205666        | C0039226                        | Enteric-coated tablets | Biomedical or Dental Material | CHEM           |
 
-- **id**: center nodes' ID. (eg. C3205666)
+- **id**: center nodes' ID. (e.g. C3205666)
 - **cui**: The cui id rolluped to center nodes.
 - **...**: optional columns.
 
@@ -114,6 +126,6 @@ The first column must be `id`.
 | ------------ | --------------- |
 | LOINC:8122-4 | ABS CD3(096925) |
 
-- **id**: center nodes' ID. (eg. LOINC:8122-4)
+- **id**: center nodes' ID. (e.g. LOINC:8122-4)
 - **...**: optional columns.
 
