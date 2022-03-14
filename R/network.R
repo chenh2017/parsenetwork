@@ -1,10 +1,7 @@
 
 
 dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs){
-  
-  attr_edges <- attrs$attr_edges
-  attr_nodes_type <- attrs$attr_nodes_type
-  attr_nodes_cap <- attrs$attr_nodes_cap
+
   # print(head(df_edges))
   df_edges <- df_edges[df_edges$from != df_edges$to, ]
   
@@ -23,7 +20,7 @@ dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs){
                       df_edges$to %in% center_nodes ] <- "center-center"
   
   
-  df_edges <- left_join(df_edges, attr_edges, by = "edgetype")
+  df_edges <- left_join(df_edges, attrs$attr_edges, by = "edgetype")
   
   df_nodes <- data.frame(id = unique(c(df_edges$from, df_edges$to)))
   df_nodes <- left_join(df_nodes, dict.combine[, c("id", "label", "term", "semantic_type", "group2", "group", "type", "category")], by = c("id"))
@@ -35,8 +32,12 @@ dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs){
   df_nodes$iscenter[df_nodes$id %in% center_nodes] <- "center"
   
   df_nodes <- left_join(df_nodes, attrs$attr_nodes_center, by = "iscenter")
-  df_nodes <- left_join(df_nodes, attrs$attr_nodes_cap, by = c("group2" = "Cap"))
-  # df_nodes <- left_join(df_nodes, attrs$attr_nodes_type, by = "type")
+  df_nodes <- left_join(df_nodes, ColorsNet, by = "group")
+  # print(head(df_nodes))
+  df_nodes$color.highlight.background = 
+    df_nodes$color.hover.background = 
+    df_nodes$color.border = df_nodes$color.background
+  
   df_nodes$shape <- "ellipse"
   df_nodes$shape[df_nodes$type == "NLP"] <- "box"
   
@@ -106,13 +107,30 @@ plot_network <- function(df_edges, hide_labels,
       df_nodes$label[df_nodes$shape == "box"] <- "        "
     }
     
-    codified <- c(2:5)[attrs$attr_legend_groups$label[2:5] %in% unique(df_nodes$group2[df_nodes$type == "Codified"])]
-    nlp <- c(7:16)[attrs$attr_legend_groups$label[7:16] %in% unique(df_nodes$group2[df_nodes$type == "NLP"])]
-    legend_to_show <- c(1,codified,6,nlp)
+    legends <- df_nodes[, c("group", "shape", "color.background")]
+    legends <- legends[!duplicated(legends), ]
+    colnames(legends) <- c("label", "shape","color")
+    # print(legends)
+    legends$size <- 10
+    legends$font.size <- 10
+    legends$font.color <- "black"
+    legends <- legends[order(legends$shape, legends$label),]
+    if("box" %in% legends$shape){
+      legends <- rbind(attrs$attr_legend_groups[1, ], legends)
+    }
+    
+    if("ellipse" %in% legends$shape){
+      legends <- dplyr::add_row(
+        legends,
+        attrs$attr_legend_groups[2, ],
+        .before = match("ellipse", legends$shape)
+      )
+    }
+    
     
       p <- visNetwork(df_nodes, df_edges, width = "100%",height = "100%") %>%
-        visLegend(addNodes = attrs$attr_legend_groups[legend_to_show,],
-                  width = 0.09,
+            visLegend(addNodes = legends,
+                  width = 0.1,
                   position = "right",
                   useGroups = FALSE,
                   zoom = TRUE,
