@@ -48,13 +48,19 @@ sunburstDF <- function(DF, valueCol = NULL, root.name = "Root"){
 sunburstPreData <- function(df, changeline){
   
   df = df[!is.na(df$labels), ]
-  df$labels = stringr::str_replace(df$labels, "^.*_Codified","Codified")
-  df$labels = stringr::str_replace(df$labels, "^.*_NLP","NLP")
-  df$labels = stringr::str_replace(df$labels, "Ignore_cui","Others")
-  df$labels = stringr::str_replace(df$labels, ",...",", ...")
+  # df$labels = stringr::str_replace(df$labels, "^.*_Codified","Codified")
+  # df$labels = stringr::str_replace(df$labels, "^.*_NLP","NLP")
+  # df$labels = stringr::str_replace(df$labels, "Ignore_cui","Others")
+  # df$labels = stringr::str_replace(df$labels, ",...",", ...")
+  df$labels = gsub("^.*_Codified", "Codified", df$labels, perl = TRUE)
+  df$labels = gsub("^.*_NLP", "NLP", df$labels, perl = TRUE)
+  df$labels = gsub("Ignore_cui", "Others", df$labels, fixed = TRUE)
+  df$labels = gsub(",...", ", ...", df$labels, fixed = TRUE)
   df$text = df$labels
-  label = df$labels[stringr::str_length(df$labels)>5]
-  label_split = stringr::str_split(label," ")
+  # label = df$labels[stringr::str_length(df$labels)>5]
+  label = df$labels[nchar(df$labels)>5]
+  # label_split = stringr::str_split(label," ")
+  label_split = strsplit(label, " ", fixed = TRUE)
   if(changeline != 99){
     label_com = sapply(label_split, function(x){
       y = ""
@@ -62,16 +68,20 @@ sunburstPreData <- function(df, changeline){
       k = 0
       while(i <= length(x)){
         y = paste(y, x[i])
-        k = k + stringr::str_length(x[i])
+        # k = k + stringr::str_length(x[i])
+        k = k + nchar(x[i])
         if(k>=changeline & i!=length(x)){
           y = paste0(y,"<br>")
           k = 0
         }
         i = i + 1
       }
-      return(stringr::str_trim(y,side = "both"))
+      # return(stringr::str_trim(y,side = "both"))
+      y <- gsub("^\\s*", "", y, perl = TRUE)
+      gsub("\\s*$", "", y, perl = TRUE)
     })
-    df$text[stringr::str_length(df$labels)>5] = label_com
+    # df$text[stringr::str_length(df$labels)>5] = label_com
+    df$text[nchar(df$labels)>5] = label_com
   }
   return(df)
 }

@@ -13,7 +13,8 @@ checkboxUpdateBySelectedRows <- function(s, input_table, session){
                              selected = x)
   }
   if(length(s)!=0){
-    s_cui = s[stringr::str_detect(input_table$id[s],"^C[0-9]")]
+    # s_cui = s[stringr::str_detect(input_table$id[s],"^C[0-9]")]
+    s_cui = s[grepl("^C\\d+$", input_table$id[s], perl = TRUE)]
     s_noncui = setdiff(s,s_cui)
     if(length(s_cui)==0 | is.null(s_cui)){
       x <- character(0)
