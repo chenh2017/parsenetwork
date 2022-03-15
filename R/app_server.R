@@ -99,7 +99,7 @@ app_server <- function(db_path){
     })
     
     input_selected <- reactive({
-      if(input_Expanded()){
+      if(input_Expanded() & (nrow(df_input()) < 6)){
         1:nrow(df_input())
       } else {
         NULL
@@ -107,7 +107,7 @@ app_server <- function(db_path){
     })
     
     input_Expanded <- reactive({
-      isTruthy(df_input()) & nrow(df_input()) < 10
+      (isTruthy(df_input()) & nrow(df_input()) < 10) | (length(unique(df_input()$category)) == 1 )
     })
     
     output$tb_input <- reactable::renderReactable(
@@ -144,13 +144,14 @@ app_server <- function(db_path){
       )
       ))
     
+    ## center nodes ==============================
     center_nodes <- eventReactive(input$gobutton, {
       print("center_nodes")
-      if (is.null(c(s1(), s2()))){
-        c("C0008947", "LOINC:11006-4")
-      } else {
+      # if (is.null(c(s1(), s2()))){
+      #   c("C0008947", "LOINC:11006-4")
+      # } else {
         c(s1(), s2())
-      }
+      # }
     }, ignoreNULL = FALSE)
     
     
@@ -206,13 +207,13 @@ app_server <- function(db_path){
     
     
     thr_cos <- reactive({
-      if(sum(sapply(list_cos(), is.null)) == 0){
+      # if(sum(sapply(list_cos(), is.null)) == 0){
         print("thr_cos")
         print(list_cos())
         list_cos() 
-      } else {
-        c(0.2, 0.1)
-      }
+      # } else {
+      #   c(0.2, 0.1)
+      # }
     })
     
     

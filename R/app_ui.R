@@ -42,9 +42,9 @@ app_ui <- function(request) {
   # sidebar =========================================
   sidebar <- shinydashboardPlus::dashboardSidebar(
     shinydashboard::sidebarMenu(
-      shinydashboard::menuItem("Data", tabName = "Data", icon = icon("table")),
-      shinydashboard::menuItem("Network", tabName = "Network", icon = icon("share-alt"),
-               selected=TRUE),
+      shinydashboard::menuItem("Data", tabName = "Data", icon = icon("table"),
+                               selected=TRUE),
+      shinydashboard::menuItem("Network", tabName = "Network", icon = icon("share-alt")),
       id = "sidebarmenu"
     ),
     collapsed = FALSE,
