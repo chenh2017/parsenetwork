@@ -1,6 +1,6 @@
 
 
-dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs){
+dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs, colors_group){
 
   # print(head(df_edges))
   df_edges <- df_edges[df_edges$from != df_edges$to, ]
@@ -32,7 +32,7 @@ dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs){
   df_nodes$iscenter[df_nodes$id %in% center_nodes] <- "center"
   
   df_nodes <- left_join(df_nodes, attrs$attr_nodes_center, by = "iscenter")
-  df_nodes <- left_join(df_nodes, ColorsNet, by = "group")
+  df_nodes <- left_join(df_nodes, colors_group, by = "group")
   # print(head(df_nodes))
   df_nodes$color.highlight.background = 
     df_nodes$color.hover.background = 
@@ -89,12 +89,12 @@ plot_network <- function(df_edges, hide_labels,
                          node_num_cutoff,
                          myconfirmation, slider_text, slider_size,
                          dict.combine, 
-                         attrs, 
+                         attrs, colors_group, 
                          layout = "layout_nicely"){
   print(nrow(df_edges))
   if(nrow(df_edges) > 0){
     center_nodes = unique(df_edges$from)
-    draw.data = dataNetwork(center_nodes, df_edges, dict.combine, attrs)
+    draw.data = dataNetwork(center_nodes, df_edges, dict.combine, attrs, colors_group)
     df_edges = draw.data[[1]]
     df_nodes = draw.data[[2]]
     print(nrow(df_edges))

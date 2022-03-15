@@ -273,6 +273,7 @@ app_server <- function(db_path){
     
     output$reactb <- reactable::renderReactable(reactable::reactable({
       print("output table")
+      req(df_output())
       df_output()
     }, selection = "single", onClick = "select",
     groupBy = c("center_nodes", "category"),
@@ -321,11 +322,12 @@ app_server <- function(db_path){
     })
     output$network_proxy_nodes <- visNetwork::renderVisNetwork({
       print("********************network**************")
+      req(picked_colors())
       myconfirmation = input$myconfirmation
       plot_network(df_edges_cutted(), input$hide_labels,
                    500,
                    myconfirmation, 1, 1,
-                   dict.combine, attrs)
+                   dict.combine, attrs, picked_colors())
     })
     
     
@@ -647,6 +649,31 @@ app_server <- function(db_path){
     observeEvent(input$bookmark, {
       # print(attr_nodes())
       session$doBookmark()
+    })
+    
+    # color picker  =================================
+    
+    output$ui_color <- renderUI({
+      n <- 1
+      colors_group <- NULL
+      lapply(c(sort(unique(dict.combine$group)), "a", "b"), function(x){
+        if(!x %in% ColorsNet$group){
+          c <- sample(setdiff(colors, c(ColorsNet$color.background, colors_group$color.background)), 1)
+          colors_group <<- rbind(colors_group, c(x, c))
+        } else {
+          colors_group <<- rbind(colors_group, ColorsNet[ColorsNet$group == x,])
+        }
+        column(6, colorpickerUI(x, colors_group$color.background[colors_group$group == x]))
+      })
+    })
+    
+    picked_colors <- reactive({
+      updateControlbarMenu("controlbarMenu", selected = "Network")
+      c <- sapply(sort(unique(dict.combine$group)), colorpickerServer)
+      req(c[[1]])
+      print("picked_colors")
+      print(c)
+      data.frame("group" = names(c), "color.background" = c)
     })
     
 
