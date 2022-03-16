@@ -242,7 +242,7 @@ app_ui <- function(request) {
       ),
       shinydashboardPlus::controlbarItem(
         "Network",
-        checkboxInput("hide_labels", "Hide the labels", value = TRUE),
+        checkboxInput("hide_labels", "Hide the labels", value = FALSE),
         uiOutput("ui_color")
       )
     ),

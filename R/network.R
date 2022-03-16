@@ -24,6 +24,7 @@ dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs, colors_grou
   
   df_nodes <- data.frame(id = unique(c(df_edges$from, df_edges$to)))
   df_nodes <- left_join(df_nodes, dict.combine[, c("id", "label", "term", "semantic_type", "group2", "group", "type", "category")], by = c("id"))
+  df_nodes$label <- df_nodes$term
   # colnames(df_nodes) <- c("id", "label", "group", "type", "index01", "index02", "capinfo2", "Category")
   # df_nodes$Cap <- df_nodes$index01
   # df_nodes$Cap[df_nodes$Cap == "Ignore_cui"] <- df_nodes$index02[df_nodes$Cap == "Ignore_cui"]
