@@ -6,6 +6,7 @@
 \usage{
 run_app(
   db_path,
+  directed = FALSE,
   onStart = NULL,
   options = list(),
   enableBookmarking = "server",
@@ -14,7 +15,9 @@ run_app(
 )
 }
 \arguments{
-\item{db_path}{path to database.}
+\item{db_path}{string. path to database.}
+
+\item{directed}{logical. Default FALSE. If TRUE, arrows will be showed in the network.}
 
 \item{onStart}{A function that will be called before the app is actually run.
 This is only needed for \code{shinyAppObj}, since in the \code{shinyAppDir}

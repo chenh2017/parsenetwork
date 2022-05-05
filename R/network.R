@@ -1,26 +1,59 @@
 
 
-dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs, colors_group){
+dataNetwork <- function(center_nodes, df_edges, dict.combine, attrs, colors_group, directed){
 
   # print(head(df_edges))
-  df_edges <- df_edges[df_edges$from != df_edges$to, ]
+  # df_edges <- df_edges[df_edges$from != df_edges$to, ]
+  # 
+  # df_edges$ends <- paste0(df_edges$from, ";",df_edges$to)
+  # df_edges$ends <- sapply(df_edges$ends, function(x){
+  #   paste(sort(strsplit(x, ";", fixed = T)[[1]]), collapse = ";")
+  # })
+  # 
+  # df_edges <- df_edges[!duplicated(df_edges$ends), ]
+  # df_edges <- df_edges[, -4]
   
-  df_edges$ends <- paste0(df_edges$from, ";",df_edges$to)
-  df_edges$ends <- sapply(df_edges$ends, function(x){
-    paste(sort(strsplit(x, ";", fixed = T)[[1]]), collapse = ";")
-  })
-  
-  df_edges <- df_edges[!duplicated(df_edges$ends), ]
-  df_edges <- df_edges[, -4]
+  df_edges$title <- paste(df_edges$from, "<b> &rarr; </b>", df_edges$to, ": ", round(abs(df_edges$cos), 3))
+  df_edges$title[df_edges$cos < 0] <- paste(df_edges$to, "<b> &rarr; </b>", df_edges$from, ": ", round(abs(df_edges$cos), 3))[df_edges$cos < 0]
   
   df_edges$length <- abs(df_edges$cos)^(-1.1)*10
-  df_edges$title <- paste0(df_edges$from,"<b> &rarr; </b>", df_edges$to, "<br>", df_edges$cos)
+  
+  if(directed){
+    
+    getDirection <- function(x){
+      if(length(x) == 1){
+        return(ifelse(x > 0, 1, -1))
+      }
+      if(length(x) == 2){
+        return(0)
+      }
+    }
+    # print(paste("after dedup:  ", nrow(df_edges)))
+    
+    df_edges <- df_edges %>%
+      dplyr::group_by(.data$from, .data$to) %>%
+      dplyr::summarise(title = paste(.data$title, collapse = "<br>"), n = dplyr::n(), direction = getDirection(cos))
+    
+    df_edges$arrows <- "to"
+    df_edges$arrows[df_edges$direction == -1] <- "from"
+    df_edges$arrows[df_edges$direction == 0] <- "from;to"
+    
+  }
+  
+  # df_edges$title <- paste0(df_edges$from,"<b> &rarr; </b>", df_edges$to, "<br>", df_edges$cos)
   df_edges$edgetype <- "center-other"
   df_edges$edgetype[df_edges$from %in% center_nodes &
                       df_edges$to %in% center_nodes ] <- "center-center"
   
+  if(directed){
+    df_edges$edgetype[df_edges$direction == -1] <- "other-center"
+    df_edges$edgetype[df_edges$direction == 0] <- "two-way"
+  }
+  
   
   df_edges <- left_join(df_edges, attrs$attr_edges, by = "edgetype")
+  
+  # readr::write_rds(df_edges, "~/Project/parse_network/data-raw/directed_net/temp_edge.rds")
   
   df_nodes <- data.frame(id = unique(c(df_edges$from, df_edges$to)))
   df_nodes <- left_join(df_nodes, dict.combine[, c("id", "label", "term", "semantic_type", "group2", "group", "type", "category")], by = c("id"))
@@ -90,12 +123,12 @@ plot_network <- function(df_edges, hide_labels,
                          node_num_cutoff,
                          myconfirmation, slider_text, slider_size,
                          dict.combine, 
-                         attrs, colors_group, 
+                         attrs, colors_group, directed,
                          layout = "layout_nicely"){
   print(nrow(df_edges))
   if(nrow(df_edges) > 0){
     center_nodes = unique(df_edges$from)
-    draw.data = dataNetwork(center_nodes, df_edges, dict.combine, attrs, colors_group)
+    draw.data = dataNetwork(center_nodes, df_edges, dict.combine, attrs, colors_group, directed)
     df_edges = draw.data[[1]]
     df_nodes = draw.data[[2]]
     print(nrow(df_edges))
@@ -129,8 +162,14 @@ plot_network <- function(df_edges, hide_labels,
     }
     
     
+    addEdges = NULL
+    if(directed){
+      addEdges = attrs$attr_legend_edge
+    } 
+    
       p <- visNetwork(df_nodes, df_edges, width = "100%",height = "100%") %>%
             visLegend(addNodes = legends,
+                      addEdges = addEdges,
                   width = 0.1,
                   position = "right",
                   useGroups = FALSE,

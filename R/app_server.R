@@ -8,8 +8,10 @@
 #' @import shinydashboardPlus
 #' @import visNetwork
 #' @noRd
-app_server <- function(db_path){
+app_server <- function(db_path, directed){
   server <- function(input, output, session) {
+    
+    shinyhelper::observe_helpers()
     
     ## data  ===================
     
@@ -171,10 +173,11 @@ app_server <- function(db_path){
       if(!is.null(center_nodes())){
         thr_cos = df_edges() %>%
           dplyr::group_by(.data$from) %>%
-          dplyr::summarize(thr_cos = ifelse(is.na(sort(.data$cos, decreasing = TRUE)[100]), min(.data$cos), sort(.data$cos, decreasing = TRUE)[100]))
-        thr_cos = thr_cos$thr_cos[match(center_nodes(), thr_cos$from)]
+          dplyr::summarize(thr_cos = ifelse(is.na(sort(.data$cos, decreasing = TRUE)[100]), min(abs(.data$cos)), sort(abs(.data$cos), decreasing = TRUE)[100]),
+                           max = max(abs(.data$cos)))
+        thr_cos = thr_cos[match(center_nodes(), thr_cos$from), ]
         
-        print(paste(center_nodes(), thr_cos))
+        print(thr_cos)
         print(input$controlbarMenu)
         
         if(input$controlbarMenu == "Network"){
@@ -187,8 +190,8 @@ app_server <- function(db_path){
             sliderInput(
               inputId = paste0("cos_", gsub(":", "_", center_nodes()[i])),
               label = paste0(center_nodes()[i],":"),
-              min = 0.1, max = 1,
-              value = c(thr_cos[i], 1),
+              min = 0.1, max = abs(thr_cos$max[i]),
+              value = c(abs(thr_cos$thr_cos[i]), abs(thr_cos$max[i])),
               step = 0.01
             )
           })
@@ -227,7 +230,7 @@ app_server <- function(db_path){
           print(paste(center_nodes()[i], "========="))
           print(nrow(df))
           df <- left_join(df, dict.combine[, c("id", "category")], by = c("to" = "id"))
-          df[df$cos >= thr_cos()[i], ]
+          df[abs(df$cos) >= thr_cos()[i], ]
         }))
       }
     })
@@ -279,7 +282,9 @@ app_server <- function(db_path){
     groupBy = c("center_nodes", "category"),
     columns = list(
       center_nodes = reactable::colDef(name = "center nodes"),
-      cosine_similarity = reactable::colDef(name = "cosine similarity"),
+      cosine_similarity = reactable::colDef(name = "cosine similarity", cell = function(value){
+        round(value, 3)
+      }),
       connected_nodes = reactable::colDef(
         minWidth = 250,
         name = "connected_nodes / term",
@@ -327,7 +332,7 @@ app_server <- function(db_path){
       plot_network(df_edges_cutted(), input$hide_labels,
                    500,
                    myconfirmation, 1, 1,
-                   dict.combine, attrs, picked_colors())
+                   dict.combine, attrs, picked_colors(), directed)
     })
     
     
@@ -438,6 +443,7 @@ app_server <- function(db_path){
       df <- left_join(df_edges_cutted,
                       dict.combine[, c("id", "term", "category")],
                       by = c("connected_nodes" = "id"))
+      df$cosine_similarity <- round(df$cosine_similarity, 3)
       df[, c(5, 2, 4, 3)]
     },
     groupBy = c("category"),
@@ -459,6 +465,7 @@ app_server <- function(db_path){
       term = reactable::colDef(show = FALSE)
     ),
     bordered = TRUE,
+    defaultExpanded = TRUE,
     pagination = FALSE
     )
     )
@@ -495,13 +502,14 @@ app_server <- function(db_path){
       
       tbs <- getData("details", db)
       
-      tbs <- rbind(tbs, data.frame(tname = "synonyms", title = "Synonyms"))
+      tbs <- rbind(tbs, data.frame(tname = "synonyms", title = "Synonyms", note = "Synonyms"))
       
       print(tbs)
       
       apply(tbs, 1, function(x){
         tname = x[1]
         title = x[2]
+        helps = ifelse(!is.null(x) & length(x) == 3, x[3], "")
         print(tname)
         df <- getData(tname, db)
         if(selected_id() %in% df$id){
@@ -511,7 +519,7 @@ app_server <- function(db_path){
           } else{
             sy <- NULL
           }
-          outdiv <<- detailsServer(tname, df[df$id == selected_id(),], title, outdiv, selected_id(), sy, output)
+          outdiv <<- detailsServer(tname, df[df$id == selected_id(),], title, outdiv, selected_id(), sy, output, helps)
         }
       })
       outdiv
@@ -656,10 +664,14 @@ app_server <- function(db_path){
     output$ui_color <- renderUI({
       n <- 1
       colors_group <- NULL
-      lapply(c(sort(unique(dict.combine$group)), "a", "b"), function(x){
+      print("ui_color")
+      print(ColorsNet$group)
+      print(unique(dict.combine$group))
+      lapply(sort(unique(dict.combine$group)), function(x){
         if(!x %in% ColorsNet$group){
           c <- sample(setdiff(colors, c(ColorsNet$color.background, colors_group$color.background)), 1)
-          colors_group <<- rbind(colors_group, c(x, c))
+          colors_group <<- rbind(colors_group, data.frame("group"=x,
+                                                          "color.background"=c))
         } else {
           colors_group <<- rbind(colors_group, ColorsNet[ColorsNet$group == x,])
         }

@@ -1,6 +1,7 @@
 #' Run the Shiny Application
 #'
-#' @param db_path path to database.
+#' @param db_path string. path to database.
+#' @param directed logical. Default FALSE. If TRUE, arrows will be showed in the network.
 #' @param ... arguments to pass to golem_opts. 
 #' See `?golem::get_golem_options` for more details.
 #' @inheritParams shiny::shinyApp
@@ -9,7 +10,7 @@
 #' @importFrom shiny shinyApp
 #' @importFrom golem with_golem_options 
 run_app <- function(
-  db_path,
+  db_path, directed = FALSE,
   onStart = NULL,
   options = list(), 
   enableBookmarking = "server",
@@ -19,7 +20,7 @@ run_app <- function(
   with_golem_options(
     app = shinyApp(
       ui = app_ui,
-      server = app_server(db_path),
+      server = app_server(db_path, directed = directed),
       onStart = onStart,
       options = options, 
       enableBookmarking = enableBookmarking, 
