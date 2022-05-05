@@ -1,73 +1,58 @@
 
 
-# writeDB <- function(df, tname, db){
-#   con <- dbConnect(RSQLite::SQLite(), db)
-#   if(tname %in% dbListTables(con)){
-#     dbWriteTable(con, tname, df, append = TRUE)
-#   } else {
-#     dbWriteTable(con, tname, df)
-#   }
-#   dbDisconnect(con)
-# }
-
 writeDB <- function(df, tname, db, overwrite = FALSE){
   con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
+  on.exit(RSQLite::dbDisconnect(con), add = TRUE)
+  on.exit(message("write ", "'", tname, "'", " into ", db, "\n"), add = TRUE)
   if(overwrite){
-    RSQLite::dbWriteTable(con, tname, df, overwrite = overwrite)
+    RSQLite::dbWriteTable(con, tname, df, overwrite = TRUE)
   } else {
     RSQLite::dbWriteTable(con, tname, df, append = TRUE)
   }
-  RSQLite::dbDisconnect(con)
 }
 
 
-
-# edge2db <- function(df, db, cutoff = 0){
-#   df <- data.frame(df)
-#   colnames(df) <- rownames(df)
-#   df$id <- rownames(df)
-#   df <- reshape2::melt(df)
-#   df <- df[df$value > cutoff,]
-#   df_index <- data.frame(index = 1:length(unique(df$id)), id = sort(unique(df$id)))
-#   df <- left_join(df, df_index, by = "id")
-#   df <- left_join(df, df_index, by = c("variable" = "id"))
-#   
-#   df <- df %>%
-#     group_by(id) %>%
-#     summarize(from = unique(index.x),
-#               to = paste(index.y, collapse = ";"),
-#               cos = paste(value, collapse = ";"))
-#   df <- df[order(df$from), c("to", "cos")]
-#   writeDB(df, "edge", db, overwrite = TRUE)
-#   writeDB(df_index, "ids", db, overwrite = TRUE)
-# }
-
-edge2db <- function(df, db, cutoff = 0){
+edge2db <- function(df, db, cutoff, directed){
   if(class(df)[1]=="matrix"){
     df <- reshape2::melt(df)
-    df <- data.frame(from = as.vector(df$Var1),
-                     to = as.vector(df$Var2),
-                     weight = df$value)
+    df <- data.frame("from" = as.vector(df$Var1),
+                     "to" = as.vector(df$Var2),
+                     "weight" = df$value)
   }
   if (class(df)[1]=="dgCMatrix"){
     summ <- Matrix::summary(df)
-    df<-data.frame(from = rownames(df)[summ$i],
-                   to = colnames(df)[summ$j],
-                   weight = summ$x)
+    df<-data.frame("from" = rownames(df)[summ$i],
+                   "to" = colnames(df)[summ$j],
+                   "weight" = summ$x)
   }
+  
   df <- df[df$weight > cutoff,]
   ids <- unique(c(df$from, df$to))
   df_index <- data.frame("index" = 1:length(ids), "id" = sort(ids))
-  df <- dplyr::left_join(df, df_index, by = c("from" = "id"))
-  df <- dplyr::left_join(df, df_index, by = c("to" = "id"))
+  df$direction <- 1
+  df_reverse <- df
+  colnames(df_reverse) <- c("to", "from", "weight", "direction")
+  if(directed){
+    df_reverse$weight <- -df_reverse$weight
+    df_reverse$direction <- -1
+  }
   
-  df <- df %>%
+  df_2 <- rbind(df, df_reverse)
+  df_2 <- df_2 %>% dplyr::group_by(.data$from, .data$to, .data$direction) %>% dplyr::summarise(weight = mean(.data$weight))
+  # df_2 <- df_2[!duplicated(df_2),]
+  
+  
+  df_2 <- dplyr::left_join(df_2, df_index, by = c("from" = "id"))
+  df_2 <- dplyr::left_join(df_2, df_index, by = c("to" = "id"))
+  
+  df_2 <- df_2 %>%
     dplyr::group_by(.data$from) %>%
     dplyr::summarize(from = unique(.data$index.x),
               to = paste(.data$index.y, collapse = ";"),
               cos = paste(.data$weight, collapse = ";"))
-  df <- df[order(df$from), c("to", "cos")]
-  writeDB(df, "edge", db, overwrite = TRUE)
+  df_2 <- df_2[order(df_2$from), c("to", "cos")]
+  
+  writeDB(df_2, "edge", db, overwrite = TRUE)
   writeDB(df_index, "ids", db, overwrite = TRUE)
 }
 
@@ -113,16 +98,29 @@ codified2db <- function(dict, db){
 }
 
 
+details2db <- function(tname, df, db, overwrite, title, note){
+  details <- getData("details", db)
+  title = ifelse(is.null(title), tname, title)
+  if(tname %in% details$tname){
+    details$title[details$tname == tname] <- title
+    writeDB(details, "details", db, overwrite = TRUE)
+  } else {
+    writeDB(data.frame(tname = tname, title = title, note = note), "details", db, overwrite = FALSE)
+  }
+  writeDB(df, tname, db, overwrite = overwrite)
+}
+
+
+
 readDB <- function(sql, tname, db){
   con <- RSQLite::dbConnect(RSQLite::SQLite(), db)
+  on.exit(RSQLite::dbDisconnect(con), add = TRUE)
   if(tname %in% RSQLite::dbListTables(con)){
-    data <- DBI::dbGetQuery(conn = con, sql)
+    RSQLite::dbGetQuery(conn = con, sql)
   } else {
     print(paste0(tname, " is't in ", db))
-    data <- NULL
+    NULL
   }
-  RSQLite::dbDisconnect(con)
-  return(data)
 }
 
 
@@ -142,10 +140,20 @@ getCosFromDB <- function(n, ids, db){
     n <- ids$index[ids$id == n]
   }
   data <- getData("edge", db, n = n)
-  data.frame(from = ids$id[n],
-             to = ids$id[as.numeric(strsplit(data$to, ";")[[1]])],
-             cos = as.numeric(strsplit(data$cos, ";")[[1]]),
-             row.names = NULL)
+  if(grepl("|", data$to, fixed = TRUE)){
+    Reduce(rbind, Map(function(x){
+      data.frame(from = n,
+                 to = strsplit(unlist(strsplit(data$to, "|", fixed = TRUE)), ";")[[x]],
+                 cos = as.numeric(strsplit(unlist(strsplit(data$cos, "|", fixed = TRUE)), ";")[[x]]),
+                 direction = x,
+                 row.names = NULL)}, 1:2))
+  } else{
+    data.frame(from = ids$id[n],
+               to = ids$id[as.numeric(strsplit(data$to, ";")[[1]])],
+               cos = as.numeric(strsplit(data$cos, ";")[[1]]),
+               row.names = NULL)
+  }
+  
 }
 
 getDetailsFromDB <- function(db, id){

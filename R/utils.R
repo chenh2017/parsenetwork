@@ -4,15 +4,19 @@ clickedNodeText <- function(node_id, dict.combine){
   node_group = dict.combine$semantic_type[match(node_id,dict.combine$id)]
   node_type = dict.combine$category[match(node_id,dict.combine$id)]
   HTML(paste0("<b>ID: </b>",node_id, 
-              "<br><b>Semantic type: </b>", node_group,
+              ifelse(is.na(node_group), "", paste0("<br><b>Semantic type: </b>", node_group)),
               "<br><b>Category: </b>", node_type))
 }
 
 
-box_info <- function(title, info, height = 500, border_color = "#EEEEEE"){
+box_info <- function(title, info, helps, height = 500, border_color = "#EEEEEE"){
   div(
     p(tags$b(title, style = "padding-left: 5px;"),
-      style = "margin-top: 5px;"),
+      style = "margin-top: 5px;") %>% 
+      shinyhelper::helper(type = "inline",
+                          title = "Description of the data",
+                          content = helps,
+                          size = "m"),
     div(info,
         style = paste0("height: ", ifelse(is.numeric(height), paste0(height - 45, "px;"), "auto"),
                         "overflow: auto;

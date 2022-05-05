@@ -82,6 +82,9 @@ app_ui <- function(request) {
       br(),
       # hr(),
       tabsetPanel(id = "tabs_nodeinfo",
+                  tabPanel(title = "Table of connected nodes",
+                           uiOutput("clicked_node_table")
+                  ),
                   tabPanel(title = "Sunburst plot",
                            br(),
                            # fluidRow(column(6,
@@ -102,9 +105,6 @@ app_ui <- function(request) {
                   tabPanel(title = "Circular plot",
                            br(),
                            uiOutput("circularplot")
-                  ),
-                  tabPanel(title = "Table of connected nodes",
-                           uiOutput("clicked_node_table")
                   ),
                   tabPanel(title = "More details",
                            br(),

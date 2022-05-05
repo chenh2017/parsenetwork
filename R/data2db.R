@@ -13,7 +13,8 @@
 #' @param overwrite logical. Default FALSE. If TRUE, The existing table will be overwrite.
 #' @param cutoff float. Default 0. Parameter for "edge" data. The cutoff for matrix data of network.
 #' @param directed logical. Default FALSE. Parameter for "edge" data. If TRUE, the edge of the network will be with arrow. Not currently available.
-#' @param title	string. Default NULL. Parameter for more data. The title for more information data.
+#' @param title string. Default NULL. Parameter for more data. The title for more information data.
+#' @param note string. Default "". Parameter for more data. The description for more information data.
 #' @return A sqlite3 database.
 #' @examples
 #' \dontrun{
@@ -21,14 +22,22 @@
 #' data2db("edge", "test_data2db.db", "test_data2db.rds")
 #' }
 #' @export
-data2db <- function(tname, db, file, sep = "rds", overwrite = FALSE, cutoff = 0, directed = FALSE, title = NULL){
+data2db <- function(tname, db, file, sep = "rds", overwrite = FALSE, cutoff = 0, directed = FALSE, title = NULL, note = ""){
   if(sep == "rds"){
     df <- readr::read_rds(file)
   } else {
-    df <- readr::read_delim(file, delim = sep)
+    df <- readr::read_delim(file, delim = sep, show_col_types = FALSE)
+  }
+  if(!file.exists(db)){
+    message("Create new database: ", db)
+  }
+  cat("Database: ", db, "\n")
+  cat("Table: ", tname, "\n")
+  if (! class(df)[1] %in% c("dgCMatrix", "matrix")){
+    cat("Fields: ", colnames(df), "\n")
   }
   if(tname == "edge"){
-    edge2db(df, db, cutoff = cutoff)
+    edge2db(df, db, cutoff = cutoff, directed = directed)
   } else if(tname == "dict_cui"){
     cui2db(df, db)
   } else if(tname == "dict_codified"){
@@ -36,15 +45,6 @@ data2db <- function(tname, db, file, sep = "rds", overwrite = FALSE, cutoff = 0,
   } else if(tname == "synonyms"){
     writeDB(df, "synonyms", db, overwrite = TRUE)
   } else{
-    details <- getData("details", db)
-    title = ifelse(is.null(title), tname, title)
-    if((!overwrite) & (!is.null(details)) & (tname %in% details$tname)){
-      details$title[details$tname == tname] <- title
-      writeDB(details, "details", db, overwrite = TRUE)
-      writeDB(df, tname, db, overwrite = TRUE)
-    } else {
-      writeDB(data.frame(tname = tname, title = title), "details", db, overwrite = overwrite)
-      writeDB(df, tname, db, overwrite = overwrite)
-    }
+    details2db(tname, df, db, overwrite = overwrite, title = title, note = note)
   }
 }

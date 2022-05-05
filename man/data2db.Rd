@@ -12,7 +12,8 @@ data2db(
   overwrite = FALSE,
   cutoff = 0,
   directed = FALSE,
-  title = NULL
+  title = NULL,
+  note = ""
 )
 }
 \arguments{
@@ -37,6 +38,8 @@ data2db(
 \item{directed}{logical. Default FALSE. Parameter for "edge" data. If TRUE, the edge of the network will be with arrow. Not currently available.}
 
 \item{title}{string. Default NULL. Parameter for more data. The title for more information data.}
+
+\item{note}{string. Default "". Parameter for more data. The description for more information data.}
 }
 \value{
 A sqlite3 database.
