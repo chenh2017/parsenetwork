@@ -99,6 +99,10 @@ sunburstPlotly <- function(node_now, df_edges,
     rhd = rhd[order(rhd$group2,rhd$group,rhd$level1,rhd$level2,
                     rhd$level3,rhd$level4,rhd$x),]
     DF = rhd[,-c(1,2)]
+    if(length(unique(DF$group2)) == length(unique(DF$group))){
+      DF$group = NULL
+    }
+    
     df = sunburstDF(DF,valueCol = "x",root.name = node_name)
     df = sunburstPreData(df, changeline=10)
     
