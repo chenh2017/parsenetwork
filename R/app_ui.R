@@ -40,16 +40,72 @@ app_ui <- function(request) {
     ),
     titleWidth = "50px")
   # sidebar =========================================
-  sidebar <- shinydashboardPlus::dashboardSidebar(
-    shinydashboard::sidebarMenu(
-      shinydashboard::menuItem("Data", tabName = "Data", icon = icon("table"),
-                               selected=TRUE),
-      shinydashboard::menuItem("Network", tabName = "Network", icon = icon("share-alt")),
-      id = "sidebarmenu"
+  sidebar <- dashboardSidebar(
+    fluidRow(
+      column(width = 3,
+             div(
+               shinyWidgets::prettyToggle(
+                 inputId = "btn_fixed",
+                 label_on = "Precise match", 
+                 label_off = "Fuzzy match",
+                 value = TRUE,
+                 status_off = "primary"
+               ), align = "center", style = "margin-top: 8px;"
+             )),
+      conditionalPanel("input.btn_fixed == 1",
+                       column(width = 9,
+                              selectizeInput(inputId = "searchbox1", 
+                                             label = NULL,
+                                             choices = NULL, 
+                                             selected = NULL, 
+                                             multiple = TRUE,
+                                             width = "100%",
+                                             options = list(
+                                               create = FALSE,
+                                               placeholder = 'rheumatoid arthritis',
+                                               maxItems = 3,
+                                               onDropdownOpen = I("function($dropdown) {if (!this.lastQuery.length) {this.close(); this.settings.openOnFocus = false;}}"),
+                                               onType = I("function (str) {if (str === '') {this.close();}}")
+                                             )))
+      ),
+      conditionalPanel("input.btn_fixed == 0",
+                       column(width = 9,
+                              shinyWidgets::searchInput(
+                                inputId = "searchbox2",
+                                # label = "Enter your search :",
+                                placeholder = "rheumatoid arthritis",
+                                value = NULL,
+                                btnSearch = icon("search"),
+                                # btnReset = icon("remove"),
+                                width = "100%"
+                              )
+                       ))),
+    
+    uiOutput("ui_input"),
+    hr(),
+    checkboxGroupInput("inCheckboxGroup1", "0 NLP node(s) Selected:"),
+    checkboxGroupInput("inCheckboxGroup2", "0 Codified node(s) Selected:"),
+    fluidRow(
+      column(6,
+             div(
+               actionButton(
+                 inputId = "deselect",
+                 label = "Deselect", 
+                 icon = icon("undo"),
+                 color = "lightgrey"
+               ), align = "center")),
+      column(6,
+             div(
+               actionButton(
+                 inputId = "gobutton",
+                 label = "Submit", 
+                 icon = icon("check"),
+                 color = "green"
+               ), align = "center"))
     ),
     collapsed = FALSE,
-    width = "120px",
-    minified = TRUE
+    width = "500px",
+    minified = FALSE
   )
   
   # body ============================================
@@ -87,19 +143,6 @@ app_ui <- function(request) {
                   ),
                   tabPanel(title = "Sunburst plot",
                            br(),
-                           # fluidRow(column(6,
-                           #                 sliderTextInput("changeline","max Text length on each line (set as 99 if not breaking lines:)",
-                           #                                 choices = c(5,10,15,20,25,99),selected = 10,grid=TRUE,width = "100%"),
-                           #                 pickerInput(
-                           #                   inputId = "rotatelabel",
-                           #                   label = "The orientation of text inside sectors",
-                           #                   choices = c("radial", "tangential")
-                           #                 )
-                           # ),
-                           # column(6,sliderInput("scale_sungh","Graph height:", 
-                           #                      min=500,max=1000,value=750,width = "100%"))
-                           # ),
-                           
                            div(uiOutput("ui_sun"),align="center")
                   ),
                   tabPanel(title = "Circular plot",
@@ -118,89 +161,7 @@ app_ui <- function(request) {
       includeMarkdown(app_sys("app/doc/documentation.md"))
     ),
     
-    # content ============================================
-    shinydashboard::tabItems(
-      # Tab data  ==============================================================
-      shinydashboard::tabItem(tabName = "Data",
-              box(id = "input_tb",
-                  title = "Input box",
-                  width = 5,
-                  fluidRow(
-                    column(width = 3,
-                           div(
-                             shinyWidgets::prettyToggle(
-                               inputId = "btn_fixed",
-                               label_on = "Precise match", 
-                               label_off = "Fuzzy match",
-                               value = TRUE,
-                               status_off = "primary"
-                             ), align = "center", style = "margin-top: 8px;"
-                           )),
-                    conditionalPanel("input.btn_fixed == 1",
-                                     column(width = 9,
-                                            selectizeInput(inputId = "searchbox1", 
-                                                           label = NULL,
-                                                           choices = NULL, 
-                                                           selected = NULL, 
-                                                           multiple = TRUE,
-                                                           
-                                                           options = list(
-                                                             create = FALSE,
-                                                             placeholder = 'cancer',
-                                                             maxItems = 3,
-                                                             onDropdownOpen = I("function($dropdown) {if (!this.lastQuery.length) {this.close(); this.settings.openOnFocus = false;}}"),
-                                                             onType = I("function (str) {if (str === '') {this.close();}}")
-                                                           )))
-                    ),
-                    conditionalPanel("input.btn_fixed == 0",
-                                     column(width = 9,
-                                            shinyWidgets::searchInput(
-                                              inputId = "searchbox2",
-                                              placeholder = "cancer",
-                                              value = NULL,
-                                              btnSearch = icon("search"),
-                                              width = "100%"
-                                            )
-                                     ))),
-                  
-                  
-                  uiOutput("ui_input"),
-                  hr(),
-                  checkboxGroupInput("inCheckboxGroup1", "0 NLP node(s) Selected:"),
-                  checkboxGroupInput("inCheckboxGroup2", "0 Codified node(s) Selected:"),
-                  fluidRow(
-                    column(6,
-                           div(
-                             actionButton(
-                               inputId = "deselect",
-                               label = "Deselect", 
-                               icon = icon("undo"),
-                               color = "lightgrey"
-                             ), align = "center")),
-                    column(6,
-                           div(
-                             actionButton(
-                               inputId = "gobutton",
-                               label = "Submit", 
-                               icon = icon("check"),
-                               color = "green"
-                             ), align = "center"))
-                  )
-              ),
-              conditionalPanel(condition = "(!is.null(input.inCheckboxGroup1)) | (!is.null(input.inCheckboxGroup2))",
-                               
-                               box(id = "output_tb",
-                                   title = "Output box",
-                                   width = 7,
-                                   uiOutput("out_table"))
-              )
-      ),
-      # Tab network ============================================================
-      shinydashboard::tabItem(tabName = "Network",
-              uiOutput("network")
-              
-      )
-    )
+    uiOutput("network")
   )
   
   # controlbar =========================================

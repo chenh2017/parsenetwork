@@ -29,9 +29,6 @@ app_server <- function(db_path, directed){
     )
     
     observeEvent(input$help, {
-      if (input$sidebarmenu == "Network") {
-        shinydashboard::updateTabItems(session, "sidebarmenu", "Data")
-      }
       rintrojs::introjs(session,
               options = list(
                 steps = steps[, -1],
@@ -60,16 +57,7 @@ app_server <- function(db_path, directed){
     
     selected_id = reactive({
       print("selected_id")
-      if (input$sidebarmenu == "Data"){
-        if(isTruthy(node_tb_selected())){
-          print(node_tb_selected())
-          df_edges_cutted()$to[node_tb_selected()]
-        } else{
-          NULL
-        }
-      } else{
-        input$current_node_id$nodes[[1]]
-      }
+      input$current_node_id$nodes[[1]]
     })
     
     
@@ -119,7 +107,7 @@ app_server <- function(db_path, directed){
       groupBy = "category",
       columns = list(
         category = reactable::colDef(
-          width = 300
+          width = 200
         ),
         id = reactable::colDef(
           name = "id / term",
@@ -266,51 +254,6 @@ app_server <- function(db_path, directed){
       }
     })
     
-    output$out_table <- renderUI({
-      if (isTruthy(df_edges_cutted())){
-        reactable::reactableOutput("reactb")
-      } else {
-        ""
-      }
-    })
-    
-    output$reactb <- reactable::renderReactable(reactable::reactable({
-      print("output table")
-      req(df_output())
-      df_output()
-    }, selection = "single", onClick = "select",
-    groupBy = c("center_nodes", "category"),
-    columns = list(
-      center_nodes = reactable::colDef(name = "center nodes"),
-      cosine_similarity = reactable::colDef(name = "cosine similarity", cell = function(value){
-        round(value, 3)
-      }),
-      connected_nodes = reactable::colDef(
-        minWidth = 250,
-        name = "connected_nodes / term",
-        # Show species under character names
-        cell = function(value, index) {
-          term <- df_output()$term[index]
-          term <- if (!is.na(term)) term else "Unknown"
-          div(
-            div(style = list(fontWeight = 600), value),
-            div(style = list(fontSize = 12), term)
-          )
-        }
-      ),
-      term = reactable::colDef(show = FALSE)
-    ),
-    defaultExpanded = TRUE,
-    # Vertically center cells and bottom-align headers
-    # defaultColDef = colDef(vAlign = "center", headerVAlign = "bottom"),
-    bordered = TRUE,
-    pagination = FALSE,
-    height = 700
-    )
-    )
-    
-    node_tb_selected <- reactive(reactable::getReactableState("reactb", "selected"))
-    
     
     
     
@@ -358,10 +301,6 @@ app_server <- function(db_path, directed){
           step = 0.01
         )
       }
-    })
-    
-    observeEvent(reactable::getReactableState("reactb", "selected"), {
-      openBS_nodeinfo()
     })
     
     observeEvent(input$current_node_id, {

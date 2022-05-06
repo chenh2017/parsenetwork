@@ -40,11 +40,9 @@
 
 /* sidebar */
 
-/*
-.sidebar-menu > li{
-  background: #03256C;
+#tb_input{
+  color: black;
 }
-*/
 
 .skin-blue .sidebar-menu>li.active>a, .skin-blue .sidebar-menu>li.menu-open>a{
   background: #007bff;
