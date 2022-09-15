@@ -1,5 +1,14 @@
 inst/doc
+.gitignore
+\.gitignore
+.Rbuildignore
+\.Rbuildignore
 .Rproj.user
+/.Rproj.user/
+\.Rproj\.user/
+.Rproj\.user
+\.Rproj\.user
+.user
 .Rhistory
 .RData
 .Ruserdata
@@ -7,7 +16,7 @@ inst/doc
 /doc/
 /Meta/
 /data-raw/
-.Rhistory
 /_tests/
 /shiny_bookmarks/
 .db
+/_test/
