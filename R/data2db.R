@@ -2,10 +2,10 @@
 #' 
 #' @param tname string. The table name of the data.  A table name can contain numeric alphabets and underline (e.g. table_1 ). The table name  should begin with an alphabet. The 8 table names below are specified:
 #'                 * "edge": matrix data for network.
-#'                 * "dict_cui": dict of cui nodes.
+#'                 * "dict_cui": dict of CUI nodes.
 #'                 * "dict_codified": dict of codified nodes.
-#'                 * "synonyms": synonyms of cui nodes.
-#'                 * "rollup": rollup for cui nodes.
+#'                 * "synonyms": synonyms of CUI nodes.
+#'                 * "rollup": rollup for CUI nodes.
 #'                 * some other names can't be used: "details", "ids", "node".
 #' @param db string. The database path to write to. e.g. "./test.db".
 #' @param file string. The file path to read from. rds, csv, tsv, txt will be OK.

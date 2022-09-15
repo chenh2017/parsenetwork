@@ -1,8 +1,8 @@
 
 #' @importFrom data.table := .SD .N 
-
-## Generate sunburst plot using plotly =======================================
 sunburstDF <- function(DF, valueCol = NULL, root.name = "Root"){
+  
+  # `:=` = data.table::`:=`
   
   colNamesDF <- names(DF)
   
@@ -45,8 +45,8 @@ sunburstDF <- function(DF, valueCol = NULL, root.name = "Root"){
   hierarchyDT[, c(parentCols) := NULL]
   return(hierarchyDT)
 }
+
 sunburstPreData <- function(df, changeline){
-  
   df = df[!is.na(df$labels), ]
   # df$labels = stringr::str_replace(df$labels, "^.*_Codified","Codified")
   # df$labels = stringr::str_replace(df$labels, "^.*_NLP","NLP")
@@ -86,14 +86,33 @@ sunburstPreData <- function(df, changeline){
   return(df)
 }
 
+
+#' plot sunburst
+#'
+#' @description Plot the sunburst.
+#' 
+#' @param node_now string. the selected node's id.
+#' @param df_edges dataframe. "from", "to", "cos".
+#' @param dict.combine dataframe. "id", "label", "term", "semantic_type", "group2", "group", "type", "category"
+#' 
+#' @importFrom data.table := .SD .N 
+#' @return a sunburst plot.
+#' @examples
+#' \dontrun{
+#' sunburstPlotly("node is", "df_edges", "dict.combine")
+#' }
+#' @export
 sunburstPlotly <- function(node_now, df_edges, 
                            dict.combine){
   
   node_name = dict.combine$term[match(node_now,dict.combine$id)]
-  nodes = df_edges$to
+  nodes = c(df_edges$from, df_edges$to)
+  print(nrow(df_edges))
+  print(length(nodes))
   rhd = dict.combine[match(nodes,dict.combine$id), 
                      c("id","group1","group2","group","level1","level2","level3","level4")]
-  rhd$x = df_edges$cos
+  rhd$x = c(df_edges$cos, df_edges$cos)
+  rhd <- rhd[!duplicated(rhd),]
   
   if(nrow(rhd)>0){
     rhd = rhd[order(rhd$group2,rhd$group,rhd$level1,rhd$level2,

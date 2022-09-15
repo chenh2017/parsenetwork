@@ -1,12 +1,16 @@
-
+colors<-c("#66C2A5","#F8C998","#FFD700","#EE82EE","#98F898","#8DA0CB","#A898F8","#82B9FD",
+          "#FBD51C","#D700FE","#00FDD7","#FD0D2E","#FC844B","#E9DBF8","#0DA7FB","#85FA00",
+          "#FF0DC1","#C7ED9B","#D2A27F","#FF96EB","#D82668","#45E3FD","#0D9600","#7AB9A8",
+          "#B9ADFC","#FD8C9D","#63495A","#D2EF22","#AD70FB","#26FD8D","#B800B9","#8D880D",
+          "#0047BB","#972A16","#D292AC","#006581","#85224D","#32511C","#6D2A95","#352EFE")
 
 colorpickerUI <- function(id, color) {
   ns <- NS(id)
   colourpicker::colourInput(
     ns("colorpicker"), id, color,
-    returnName = TRUE, 
-    palette = "limited",
-    allowedCols = colors)
+    # palette = "limited",
+    # allowedCols = colors,
+    returnName = TRUE)
 }
 
 colorpickerServer <- function(id) {

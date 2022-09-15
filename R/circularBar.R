@@ -1,11 +1,7 @@
-
-#' @importFrom dplyr %>% left_join
-#' @import ggplot2
-#' @importFrom rlang .data
-#' @importFrom graphics title
-#' @importFrom stats end na.omit start
-
-## Generate circular plot using ggplot =======================================
+#' circularPreData
+#' @description Generate circular plot using ggplot
+#' @import dplyr
+#' @noRd
 circularPreData <- function(data){
   # Set a number of 'empty bar' to add at the end of each group
   empty_bar=3
@@ -13,7 +9,7 @@ circularPreData <- function(data){
   colnames(to_add) = colnames(data)
   to_add$group=rep(levels(data$group), each=empty_bar)
   data=rbind(data, to_add)
-  data=data %>% dplyr::arrange(.data$group)
+  data=data %>% arrange(.data$group)
   data$id=seq(1, nrow(data))
   
   # Get the name and the y position of each label
@@ -25,10 +21,10 @@ circularPreData <- function(data){
   
   # prepare a data frame for base lines
   base_data=data %>%
-    dplyr::group_by(.data$group) %>%
-    dplyr::summarize(start=min(.data$id), end=max(.data$id) - empty_bar) %>%
-    dplyr::rowwise() %>%
-    dplyr::mutate(title=mean(c(.data$start, .data$end)))
+    group_by(.data$group) %>%
+    summarize(start=min(.data$id), end=max(.data$id) - empty_bar) %>%
+    rowwise() %>%
+    mutate(title=mean(c(.data$start, .data$end)))
   
   
   # prepare a data frame for grid (scales)
@@ -44,7 +40,23 @@ circularPreData <- function(data){
               `grid_data` = grid_data, `base_data` = base_data))
 }
 
-circularStatic <- function(df_edges, 
+
+#' circularBar
+#'
+#' @description Plot a bar plot with polar coordinate.
+#' 
+#' @param df_edges dataframe. "from", "to", "cos".
+#' @param dict.combine dataframe. "id", "label", "term", "semantic_type", "group2", "group", "type", "category"
+#' @param ColorsCirc dataframe. "", "", ""
+#' @importFrom dplyr arrange 
+#' @import ggplot2
+#' @return a circular bar plot.
+#' @examples
+#' \dontrun{
+#' sunburstPlotly("node is", "df_edges", "dict.combine")
+#' }
+#' @export
+circularBar <- function(df_edges, 
                            dict.combine, 
                            ColorsCirc){
   
@@ -72,16 +84,16 @@ circularStatic <- function(df_edges,
           geom_bar(aes(x=as.factor(.data$id), y=.data$value, fill=.data$group), stat="identity", alpha=0.5) +
           
           # Add a val=.8/.6/.4/.2 lines. I do it at the beginning to make sur barplots are OVER it.
-          geom_segment(data=grid_data, aes(x = .data$end, y = 80, xend = start, yend = 80), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
-          geom_segment(data=grid_data, aes(x = .data$end, y = 60, xend = start, yend = 60), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
-          geom_segment(data=grid_data, aes(x = .data$end, y = 40, xend = start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
-          geom_segment(data=grid_data, aes(x = .data$end, y = 20, xend = start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+          geom_segment(data=grid_data, aes(x = .data$end, y = 80, xend = .data$start, yend = 80), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+          geom_segment(data=grid_data, aes(x = .data$end, y = 60, xend = .data$start, yend = 60), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+          geom_segment(data=grid_data, aes(x = .data$end, y = 40, xend = .data$start, yend = 40), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
+          geom_segment(data=grid_data, aes(x = .data$end, y = 20, xend = .data$start, yend = 20), colour = "grey", alpha=1, size=0.3 , inherit.aes = FALSE ) +
           
           # Add text showing the value of each .8/.6/.4/.2 lines
           annotate("text", x = rep(max(data$id),4), y = c(20, 40, 60, 80), label = c("0.2", "0.4", "0.6", "0.8") , color="grey", size=3 , angle=0, fontface="bold", hjust=1) +
           
           geom_bar(aes(x=as.factor(.data$id), y=.data$value, fill=.data$group), stat="identity", alpha=0.5) +
-          ylim(-50,max(na.omit(data$value))+10) +
+          ylim(-50,max(stats::na.omit(data$value))+10) +
           theme_minimal() +
           theme(
             legend.position = "none",

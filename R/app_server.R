@@ -8,291 +8,260 @@
 #' @import shinydashboardPlus
 #' @import visNetwork
 #' @noRd
-app_server <- function(db_path, directed){
+#' 
+app_server <- function(db){
   server <- function(input, output, session) {
-    
     shinyhelper::observe_helpers()
     
     ## data  ===================
     
-    db <- db_path
+    # db <- "/home/hui/Packages/biomedicalnet/data-raw/cui.db"
+    # db <- "/home/hui/Project/parse_network/data-raw/BCH/v2_20220707/bch_v20220707.db"
     ids <- getData("ids", db)
     dict.combine <- getData("node", db)
-    input_table <- dplyr::left_join(ids[,"id", drop = FALSE], dict.combine[, c("id", "term", "category")], by = "id")
-
+    if(sum(!grepl("\\w", dict.combine$group, perl = TRUE)) > 0){
+      dict.combine$group[!grepl("\\w", dict.combine$group, perl = TRUE)] <- "Unknown"
+    }
+    
+    tb_input <- dplyr::left_join(ids[,"id", drop = FALSE], dict.combine[, c("id", "term")], by = "id")
+    attrs <- readRDS("/home/hui/Packages/biomedicalnet/data-raw/attrs.rds")
+    ColorsNet <- readRDS("/home/hui/Packages/biomedicalnet/data-raw/colors_group.rds")
+    cui_sy <- getData("synonyms", db)
     node_num_cutoff = 500
     
-    ## Note ================
+    winsize <- windowSizeServer("win")
+    # data <- data.frame(a = 1:5, b = 6:10)
+    steps <- data.table::fread("/home/hui/Project/CUInetwork/doc/steps.tsv")
+    headerServer("btn", steps[, -1], app_sys("app/doc/documentation.md"), df_edges_cutted())
     
-    showNotification("Click 'Help' button to open step-by-step instructions.",
-                     duration = 3, type = "warning"
-    )
+    directed = FALSE
     
-    observeEvent(input$help, {
-      rintrojs::introjs(session,
+    # if(directed){
+    #   load("~/Packages/biomedicalnet/data-raw/test_directed.RData")
+    # } else {
+    #   load("~/Packages/biomedicalnet/data-raw/test_bch.RData")
+    # }
+    
+    
+    # center_nodes ====
+    center_nodes <- sidebarServer("side", tb_input, type = 2, 
+                                  # selected = c(2, 4, 8, 12),
+                                  selected = c(4, 5),
+                                  # init_nodes = c("C0003873", "C0409637", "PheCode:714.1", "PheCode:714.2"),
+                                  init_nodes = c("PheCode:714.1", "PheCode:714.2"),
+                                  synonyms = cui_sy, server = TRUE)
+    
+    output$centernodes <- renderText({
+      center_nodes()
+    })
+    
+    name_input <- reactive({
+      paste(gsub("[^\\w]", "_", center_nodes(), perl = TRUE), collapse = "_")
+    })
+    
+    observeEvent(center_nodes(), {
+      if(!is.null(center_nodes())){
+        max_nodes <- min(length(center_nodes()) * 100, nrow(df_edges_center()))
+        thr_cos <- floor(sort(df_edges_center()$cos, decreasing = TRUE)[max_nodes]*100)/100
+        max = ceiling(max(df_edges_center()$cos)*100)/100
+        min = floor(min(df_edges_center()$cos)*100)/100
+    
+        df <- df_edges_center()[df_edges_center()$cos >= thr_cos, ]
+        categories <- sort(unique(df$category))
+        
+        if(input$controlbarMenu == "Network"){
+          updateControlbarMenu(session = session, id = "controlbarMenu", selected = "Filter Nodes")
+        }
+        print("====min====max====value====")
+        print(max)
+        print(min)
+        print(c(thr_cos, max))
+        if(is.na(thr_cos)){
+          thr_cos <- min
+        }
+        output$ui_filter <- renderUI({
+          tagList(
+            sliderInput(
+              inputId = paste0(name_input(), "-filter_cos"),
+              label = "Filter nodes by cosine similarity",
+              min = min, max = max,
+              value = c(thr_cos, max),
+              step = 0.01
+            ),
+            hr(),
+            shinyWidgets::pickerInput(
+              inputId = paste0(name_input(), "-filter_category"),
+              label = "Filter nodes by category:",
+              choices = categories,
+              selected = categories,
               options = list(
-                steps = steps[, -1],
-                showBullets = FALSE
-              )
+                `actions-box` = TRUE),
+              multiple = TRUE
+            )
+          )
+          })
+        } else {
+        output$slider_cos <- renderUI({""})
+      }
+    })
+    
+    categories <- reactive({
+      req(input[[paste0(name_input(), "-filter_cos")]])
+      thr_cos <- input[[paste0(name_input(), "-filter_cos")]]
+      df <- df_edges_center()[df_edges_center()$cos >= thr_cos, ]
+      sort(unique(df$category))
+    })
+    
+    observeEvent(categories(), {
+      shinyWidgets::updatePickerInput(
+        session = session,
+        inputId = paste0(name_input(), "-filter_category"),
+        label = "Filter nodes by category:",
+        choices = categories(),
+        selected = categories(),
+        options = list(
+          `actions-box` = TRUE)
       )
     })
     
-    # input  =====================================================================
-    # maxHeight <- reactive({shinybrowser::get_height()})
-    
-    winsize <- windowSizeServer("win")
-    
-    input_rows <- reactive({
-      print("getReactableState_table")
-      reactable::getReactableState("tb_input", "selected")
+    df_edges_cutted <- reactive({
+      req(input[[paste0(name_input(), "-filter_cos")]])
+      req(input[[paste0(name_input(), "-filter_category")]])
+      # print("df_edges_cutted")
+      # print(nrow(df_edges_center()))
+      df <- df_edges_center()[df_edges_center()$cos >= input[[paste0(name_input(), "-filter_cos")]][1], ]
+      print(nrow(df))
+      # print(nrow(df[df$category %in% input$filter_category, ]))
+      df[df$category %in% input[[paste0(name_input(), "-filter_category")]], ]
     })
-    s1 = reactive({input$inCheckboxGroup1})
-    s2 = reactive({input$inCheckboxGroup2})
-    thr_cos_pop = reactive({input$cutoff_ind[1]})
-    filter_cap = reactive({
-      print("filter_cap")
-      print(input$filter_category)
-      input$filter_category
+    
+    df_edges_center <- reactive({
+      # df <- df_edges[df_edges$from %in% center_nodes() | df_edges$to  %in% center_nodes(),]
+      # df$category = dict.combine$category[match(df$to, dict.combine$id)]
+      # df$category[!df$from %in% center_nodes()] = dict.combine$category[match(df$from[!df$from %in% center_nodes()], dict.combine$id)]
+      # print("df_edges_center")
+      # print(nrow(df))
+      # 
+      # 
+      # 
+      # df <- df[!duplicated(df),]
+      # if(!directed){
+      #   df$ends <- paste0(df$from, ";",df$to)
+      #   df$ends <- sapply(df$ends, function(x){
+      #     paste(sort(strsplit(x, ";", fixed = T)[[1]]), collapse = ";")
+      #   })
+      # 
+      #   df <- df[!duplicated(df$ends), ]
+      #   df <- df[, -5]
+      # }
+      # print(nrow(df))
+      # df
+      print("df_edges")
+      req(center_nodes())
+      print(center_nodes())
+      df <- Reduce(rbind, lapply(center_nodes(), getCosFromDB, db))
+      df$category <- dict.combine$category[match(df$to, dict.combine$id)]
+      print(table(df$category))
+      df
     })
+    
+    # observeEvent(center_nodes(), {
+    #   max_nodes <- min(length(center_nodes()) * 100, nrow(df_edges_center))
+    #   thr_cos <- floor(sort(df_edges_center()$cos, decreasing = TRUE)[max_nodes]*100)/100
+    #   max = ceiling(max(df_edges_center()$cos)*100)/100
+    #   min = floor(min(df_edges_center()$cos)*100)/100
+    #   print("updateSliderInput")
+    #   print(c(max, min, thr_cos, max_nodes))
+    #   updateSliderInput(inputId = "filter_cos",
+    #                     max = max,
+    #                     min = min,
+    #                     value = c(thr_cos, max))
+    # })
+    
+    # filter category ===============================
+    
+    # categories <- reactive({
+    #   print("categories")
+    #   df <- df_edges_center()[df_edges_center()$cos >= input$filter_cos[1], ]
+    #   print(nrow(df))
+    #   sort(unique(df$category))
+    # })
+    # 
+    # observe({
+    #   print("updatePickerInput")
+    #   print(categories())
+    #   shinyWidgets::updatePickerInput(
+    #     session = session,
+    #     inputId = "filter_category",
+    #     label = "Filter nodes by category:", 
+    #     choices = categories(),
+    #     selected = categories()
+    #   )
+    # })
+    
+    ## df_edges_cut ====
+    # df_edges_cutted <- reactive({
+    #   print("df_edges_cutted")
+    #   print(nrow(df_edges_center()))
+    #   df <- df_edges_center()[df_edges_center()$cos >= input$filter_cos[1], ]
+    #   print(nrow(df))
+    #   print(nrow(df[df$category %in% input$filter_category, ]))
+    #   df[df$category %in% input$filter_category, ]
+    # })
+    
+    
+    ## network  ====================================
+      output$ui_network <- renderUI({
+        req(winsize()[2])
+        # req(input$filter_cos)
+        # req(input$filter_category)
+        if(length(center_nodes()) > 0 & (nrow(df_edges_cutted()) > 0)){
+          print("ui_network")
+          print(nrow(df_edges_cutted()))
+          print(center_nodes())
+          shinycssloaders::withSpinner(
+            visNetworkOutput("network",
+                             height =  paste0((winsize()[2]-100),"px")),
+            type = 6
+          )
+        } else {
+          h3("Try select some rows and click on submit")
+        }
+      })
+      
+      output$network <- renderVisNetwork({
+        print("********************network**************")
+        # myconfirmation = input$myconfirmation
+        print(center_nodes())
+        if(length(center_nodes()) > 0 | (isTruthy(df_edges_cutted()))){
+          req(picked_colors())
+          plot_network(center_nodes(), df_edges_cutted(), 
+                       dict.combine, attrs, picked_colors(), c(input$shape1, input$shape2),
+                       hide_labels = FALSE, 
+                       directed = directed,
+                       node_num_cutoff = 500, 
+                       layout = "layout_nicely")
+        }
+      })
+    
+    
+    
+    
     
     selected_id = reactive({
       print("selected_id")
       input$current_node_id$nodes[[1]]
     })
     
-    
-    ## search box 1 ============================
-    
-    terms <- unique(tolower(input_table$term))
-    observeEvent(input$btn_fixed, {
-      updateSelectizeInput(session, 'searchbox1', choices = terms, server = TRUE)
-    }, ignoreNULL = FALSE)
-    
-    
-    ## input table ==============================
-    
-    output$ui_input <- renderUI({
-      if((!is.null(df_input()))){
-        reactable::reactableOutput("tb_input")
-      }
-    })
-    
-    df_input <- reactive({
-      print("df_input")
-      if(input$btn_fixed & (isTruthy(input$searchbox1))){
-        input_table[tolower(input_table$term) == tolower(input$searchbox1),]
-      } else if(isTruthy(input$searchbox2)){
-        input_table[grepl(input$searchbox2, input_table$term, ignore.case = TRUE),]
-      } else {
-        input_table[grepl("cancer", input_table$term, ignore.case = TRUE),]
-      }
-    })
-    
-    input_selected <- reactive({
-      if(input_Expanded() & (nrow(df_input()) < 6)){
-        1:nrow(df_input())
-      } else {
-        NULL
-      }
-    })
-    
-    input_Expanded <- reactive({
-      (isTruthy(df_input()) & nrow(df_input()) < 10) | (length(unique(df_input()$category)) == 1 )
-    })
-    
-    output$tb_input <- reactable::renderReactable(
-      reactable::reactable({ 
-        df_input()[, c("id", "term", "category")]
-      }, 
-      groupBy = "category",
-      columns = list(
-        category = reactable::colDef(
-          width = 200
-        ),
-        id = reactable::colDef(
-          name = "id / term",
-          cell = function(value, index) {
-            term <- df_input()$term[index]
-            term <- if (!is.na(term)) term else "Unknown"
-            div(
-              div(style = list(fontWeight = 600), value),
-              div(style = list(fontSize = 12), term)
-            )
-          }
-        ),
-        term = reactable::colDef(show = FALSE)
-      ),
-      # searchable = TRUE,
-      selection = "multiple", onClick = "select",
-      defaultSelected = input_selected(),
-      defaultExpanded = input_Expanded(),
-      pagination = FALSE,
-      height = winsize()[2]-450,
-      theme = reactable::reactableTheme(
-        rowSelectedStyle = list(backgroundColor = "#eee", 
-                                boxShadow = "inset 2px 0 0 0 #ffa62d")
-      )
-      ))
-    
-    ## center nodes ==============================
-    center_nodes <- eventReactive(input$gobutton, {
-      print("center_nodes")
-      # if (is.null(c(s1(), s2()))){
-      #   c("C0008947", "LOINC:11006-4")
-      # } else {
-        c(s1(), s2())
-      # }
-    }, ignoreNULL = FALSE)
-    
-    
-    
-    # df_edges =======================================
-    df_edges <- reactive({
-      print("df_edges")
-      req(center_nodes())
-      print(center_nodes())
-      Reduce(rbind, lapply(center_nodes(), getCosFromDB, ids, db))
-    })
-    
-    
-    # silders cos  ================================================================
-    observeEvent(center_nodes(), {
-      print("slider Input")
-      if(!is.null(center_nodes())){
-        thr_cos = df_edges() %>%
-          dplyr::group_by(.data$from) %>%
-          dplyr::summarize(thr_cos = ifelse(is.na(sort(.data$cos, decreasing = TRUE)[100]), min(abs(.data$cos)), sort(abs(.data$cos), decreasing = TRUE)[100]),
-                           max = max(abs(.data$cos)))
-        thr_cos = thr_cos[match(center_nodes(), thr_cos$from), ]
-        
-        print(thr_cos)
-        print(input$controlbarMenu)
-        
-        if(input$controlbarMenu == "Network"){
-          updateControlbarMenu(session = session, id = "controlbarMenu", selected = "Filter Nodes")
-        }
-        
-        output$slider_cos <- renderUI({
-          lapply(1:length(center_nodes()), function(i) {
-            print(paste0("cos_", gsub(":", "_", center_nodes()[i])))
-            sliderInput(
-              inputId = paste0("cos_", gsub(":", "_", center_nodes()[i])),
-              label = paste0(center_nodes()[i],":"),
-              min = 0.1, max = abs(thr_cos$max[i]),
-              value = c(abs(thr_cos$thr_cos[i]), abs(thr_cos$max[i])),
-              step = 0.01
-            )
-          })
-        })
-      } else {
-        output$slider_cos <- renderUI({""})
-      }
-      
-    })
-    
-    list_cos <- reactive({
-      sapply(1:length(center_nodes()), function(i){
-        input[[paste0("cos_", gsub(":", "_", center_nodes()[i]))]][1]
-      })
-    })
-    
-    
-    thr_cos <- reactive({
-      # if(sum(sapply(list_cos(), is.null)) == 0){
-        print("thr_cos")
-        print(list_cos())
-        list_cos() 
-      # } else {
-      #   c(0.2, 0.1)
-      # }
-    })
-    
-    
-    # df_edges_cutted ====================================
-    
-    df_edges_cutted_cos <- reactive({
-      print("df_edges_cutted_cos")
-      if(sum(sapply(list_cos(), is.null)) == 0){
-        Reduce(rbind, lapply(1:length(center_nodes()), function(i){
-          df <- df_edges()[df_edges()$from == center_nodes()[i], ]
-          print(paste(center_nodes()[i], "========="))
-          print(nrow(df))
-          df <- left_join(df, dict.combine[, c("id", "category")], by = c("to" = "id"))
-          df[abs(df$cos) >= thr_cos()[i], ]
-        }))
-      }
-    })
-    
-    df_edges_cutted <- reactive({
-      print("df_edges_cutted")
-      if(isTruthy(df_edges_cutted_cos()) & isTruthy(filter_cap())){
-        Reduce(rbind, lapply(1:length(center_nodes()), function(i){
-          df <- df_edges_cutted_cos()[df_edges_cutted_cos()$from == center_nodes()[i], ]
-          print(paste(center_nodes()[i], "========="))
-          print(nrow(df))
-          df <- df[df$category %in% filter_cap(), 1:3]
-          print(nrow(df))
-          df
-        }))
-      }
-    })
-    
-    
-    # output table ===========================================
-    
-    
-    df_output <- reactive({
-      if (isTruthy(df_edges_cutted())){
-        df_edges_cutted1 <- df_edges_cutted()
-        colnames(df_edges_cutted1) <- c("center_nodes", "connected_nodes", "cosine_similarity")
-        df <- left_join(df_edges_cutted1,
-                        dict.combine[, c("id", "term", "category")],
-                        by = c("connected_nodes" = "id"))
-        print("df_output")
-        # print(head(df))
-        df[, c(1, 5, 2, 4, 3)]
-      }
-    })
-    
-    
-    
-    
-    
-    ## network  ====================================
-    output$network <- renderUI({
-      if((isTruthy(df_edges_cutted()))){
-        shinycssloaders::withSpinner(
-          visNetwork::visNetworkOutput("network_proxy_nodes",
-                           height =  paste0((winsize()[2]-90),"px")),
-          type = 6
-        )
-      }
-    })
-    output$network_proxy_nodes <- visNetwork::renderVisNetwork({
-      print("********************network**************")
-      req(picked_colors())
-      myconfirmation = input$myconfirmation
-      plot_network(df_edges_cutted(), input$hide_labels,
-                   500,
-                   myconfirmation, 1, 1,
-                   dict.combine, attrs, picked_colors(), directed)
-    })
-    
-    
-    # Node info ==================================================================
-    
-    
-    
-    
-    openBS_nodeinfo <- reactive({
-      print("openBS_nodeinfo")
+    # node info ====
+    observeEvent(input$current_node_id, {
       if (!is.null(selected_id())){
         toggleModal(session, "selectednode", toggle = "open")
-        df <- getCosFromDB(selected_id(), ids, db)
+        df <- getCosFromDB(selected_id(), db)
         v_cos = df$cos
         print("openBS_nodeinfo")
         print(length(v_cos))
-        t_cos = sort(v_cos, decreasing = TRUE)[100]
+        t_cos = sort(v_cos, decreasing = TRUE)[min(length(v_cos), 100)]
         ifelse(is.na(t_cos), min(v_cos), t_cos)
         updateSliderInput(
           inputId = "cutoff_ind",
@@ -303,41 +272,36 @@ app_server <- function(db_path, directed){
       }
     })
     
-    observeEvent(input$current_node_id, {
-      openBS_nodeinfo()
-    })
-    
     # Clicked node text
     output$clicked_node_title <- renderUI({
-      h3(getDesc(selected_id()))
+      h3(dict.combine$term[match(selected_id(), dict.combine$id)])
     })
     output$clicked_node_info <- renderUI({
       print("clicked_node_info")
       clickedNodeText(selected_id(), dict.combine)
     })
-    
+  
     ## df plots  ===================================
     df_plots <- reactive({
       print("df_plots")
       if (!is.null(selected_id())){
-        df <- getCosFromDB(selected_id(), ids, db)
-        df[df$cos >= thr_cos_pop(),]
+        df <- getCosFromDB(selected_id(), db)
+        df[df$cos >= input$cutoff_ind[1],]
+        # df_edges[df_edges$from == selected_id() | df_edges$to == selected_id(), ]
       }
     })
-    
-    
+  
     ## sunburst =======================================
     output$ui_sun <- renderUI({
       if(nrow(df_plots()) > 0){
         shinycssloaders::withSpinner(
           plotly::plotlyOutput("sun",width="auto",
-                       height="750px"), type = 6
+                               height="750px"), type = 6
         )} else {
           ""
         }
-      
     })
-    
+  
     output$sun <- plotly::renderPlotly({
       print("sunburst")
       sunburstPlotly(selected_id(), df_plots(),
@@ -346,6 +310,13 @@ app_server <- function(db_path, directed){
     })
     
     ## circular plot  =======================================
+    ColorsCirc <- data.frame("group"=c("ACTI","CHEM","PheCode","DISO",
+                                       "Drug","Lab","RXNORM","LOINC",
+                                       "PHEN","PHYS","PROC","CCS"),
+                             "color"=c("#85FA00","#0DA7FB","#FBD51C","#FBD51C",
+                                       "#D700FE","#00FDD7","#D700FE","#00FDD7",
+                                       "#FC844B","#E9DBF8","#FD0D2E","#FD0D2E"))
+    
     output$circularplot <- renderUI({
       if(nrow(df_plots()) > 0){
         shinycssloaders::withSpinner(
@@ -358,248 +329,119 @@ app_server <- function(db_path, directed){
     output$circular <- renderPlot({
       print("circular")
       node_now = selected_id()
-      circularStatic(df_plots(), dict.combine, ColorsCirc)
+      circularBar(df_plots(), dict.combine, ColorsCirc)
     })
     
-    
     # table of clicked node  ================================
+    # tbClickedServer("tb1", df_plots(), paste0(winsize()[2] - 400,"px"), dict.combine)
     
     output$clicked_node_table <- renderUI({
-      print("clicked_node_table")
       if(nrow(df_plots()) > 0){
         shinycssloaders::withSpinner(
           reactable::reactableOutput("tb_clicked_node", width = "100%",
-                          height = paste0(winsize()[2] - 400,"px")), type = 6
+                                     height = paste0(winsize()[2] - 400,"px")), type = 6
         )} else {
           ""
         }
     })
     
-    output$tb_clicked_node <- reactable::renderReactable(reactable::reactable({
-      print("tb_clicked_node")
-      df_edges_cutted <- df_plots()
-      colnames(df_edges_cutted) <- c("center_nodes", "connected_nodes", "cosine_similarity")
-      df <- left_join(df_edges_cutted,
+    df_clicked_node <- reactive({
+      df <- df_plots()
+      colnames(df) <- c("center_nodes", "connected_nodes", "cosine_similarity")
+      df <- left_join(df,
                       dict.combine[, c("id", "term", "category")],
                       by = c("connected_nodes" = "id"))
       df$cosine_similarity <- round(df$cosine_similarity, 3)
-      df[, c(5, 2, 4, 3)]
-    },
-    groupBy = c("category"),
-    columns = list(
-      cosine_similarity = reactable::colDef(name = "cosine similarity"),
-      connected_nodes = reactable::colDef(
-        minWidth = 250,
-        name = "connected_nodes / term",
-        # Show species under character names
-        cell = function(value, index) {
-          term <- df$term[index]
-          term <- if (!is.na(term)) term else "Unknown"
-          div(
-            div(style = list(fontWeight = 600), value),
-            div(style = list(fontSize = 12), term)
-          )
-        }
-      ),
-      term = reactable::colDef(show = FALSE)
-    ),
-    bordered = TRUE,
-    defaultExpanded = TRUE,
-    pagination = FALSE
-    )
-    )
-    
-    observeEvent(input$deselect, {
-      print("input$deselect")
-      reactable::updateReactable(outputId = "tb_input", selected = NA, session = session)
-    }
-    )
-    
-    ##  more tab   =================================================
-    
-    cui_sy <- reactive({
-      getData("synonyms", db)
+      df[order(df$cosine_similarity, decreasing = TRUE), c(1, 2, 5, 4, 3)]
     })
     
-    details <- reactive({
-      getData("details", db, id = selected_id())
-    })
     
-    # observeEvent(selected_id(), {
-    #   if (isTruthy(details()) & nrow(details())>0) {
-    #     write_rds(details(), "test/test_details.rds")
-    #     showTab(inputId = "tabs_nodeinfo", target = "More details")
-    #   } else {
-    #     hideTab(inputId = "tabs_nodeinfo", target = "More details")
-    #   }
-    # })
+    output$tb_clicked_node <- reactable::renderReactable(
+      reactable::reactable({ df_clicked_node() },
+                           groupBy = c("center_nodes"),
+                           columns = list(
+                             cosine_similarity = reactable::colDef(name = "cosine similarity"),
+                             connected_nodes = reactable::colDef(
+                               minWidth = 250,
+                               name = "connected_nodes / term",
+                               # Show species under character names
+                               cell = function(value, index) {
+                                 term <- df_clicked_node()$term[index]
+                                 term <- if (!is.na(term)) term else "Unknown"
+                                 div(
+                                   div(style = list(fontWeight = 600), value),
+                                   div(style = list(fontSize = 12), term)
+                                 )
+                               }
+                             ),
+                             term = reactable::colDef(show = FALSE)
+                           ),
+                           bordered = TRUE,
+                           defaultExpanded = TRUE,
+                           pagination = FALSE
+      )
+    )
+    
+    
     
     ## ui details  ===================================================
-    
     output$ui_details <- renderUI({
       outdiv <- tagList()
-      
       tbs <- getData("details", db)
-      
       tbs <- rbind(tbs, data.frame(tname = "synonyms", title = "Synonyms", note = "Synonyms"))
-      
       print(tbs)
-      
       apply(tbs, 1, function(x){
         tname = x[1]
         title = x[2]
         helps = ifelse(!is.null(x) & length(x) == 3, x[3], "")
         print(tname)
         df <- getData(tname, db)
+        if(tname == "rollup"){
+          colnames(df)[1] <- "id"
+        }
         if(selected_id() %in% df$id){
           if(tname == "rollup"){
-            sy <- cui_sy()
-            # print(df[df$id == selected_id(),])
+            sy <- cui_sy
           } else{
             sy <- NULL
           }
-          outdiv <<- detailsServer(tname, df[df$id == selected_id(),], title, outdiv, selected_id(), sy, output, helps)
+          outdiv <<- detailsTab(tname, df[df$id == selected_id(),], title, outdiv, selected_id(), sy, output, helps)
         }
       })
       outdiv
     })
     
-    
-    # output$ui_details <- renderUI({
-    #   outdiv <- tagList()
-    #   for (title in unique(details()$title)) {
-    #     print("ui_details")
-    #     if(nrow(df_plots()) > 0){
-    #       outdiv <- tagList(outdiv,
-    #         h4(),
-    #         shinycssloaders::withSpinner(
-    #           reactableOutput("tb_details", width = "100%",
-    #                           height = paste0(winsize()[2] - 400,"px")), type = 6
-    #         ))
-    #       } else {
-    #         ""
-    #       }
-    #   }
-    #   if (selected_id() %in% cui_sy()$id) {
-    #     sy_info <- sort(cui_sy()$synonyms[cui_sy()$id == selected_id()])
-    #     if (length(outdiv) > 0){
-    #       outdiv <- tagList(outdiv, br())
-    #     }
-    #     outdiv <- tagList(outdiv,
-    #       box_info(title = paste0("Synonyms of ", getDesc(selected_id()), ":"),
-    #                info = tags$ul(
-    #                  lapply(sy_info, function(x){ tags$li(x) })
-    #                ),
-    #                height = winsize()[2] - 400)
-    #     )
-    #   }
-    #   outdiv
-    # })
-    
-    
-    # df_details <- reactive({
-    #   df <- t(data.frame(strsplit(a, "|", fixed = TRUE)))
-    #   colnames(df) <- strsplit(b, "|", fixed = TRUE)[[1]]
-    # })
-    
-    # output$tb_details <- renderReactable(reactable({
-    #   print("tb_rollup")
-    #   df_rollup()
-    # },
-    #   bordered = TRUE,
-    # details = function(index) {
-    #   cui <- df_rollup()$cui[index]
-    #   if(cui %in% cui_sy()$id ){
-    #     print("*****************rollup********************")
-    #     print(cui)
-    #     htmltools::div(
-    #       "Synonyms of ", df_rollup()$cui[index], ":",
-    #       htmltools::tags$pre(paste(sort(cui_sy()$synonyms[cui_sy()$id == df_rollup()$cui[index]]), collapse = "\n"))
-    #     )
-    #   }
-    # 
-    #   },
-    #   pagination = FALSE
-    #   )
-    # )
-    
-    
-    
-    ## Update checkboxinput if refreshing===========================================
-    observeEvent(input$deselect, {
-      x <- character(0)
-      updateCheckboxGroupInput(session, "inCheckboxGroup1",
-                               "0 NLP node(s) Selected",
-                               choices = x,
-                               selected = x)
-      updateCheckboxGroupInput(session, "inCheckboxGroup2",
-                               "0 Codified node(s) Selected",
-                               choices = x,
-                               selected = x)
-      
+    rollup <- getData("rollup", db)
+    rollup_selected <- reactive({
+      rollup[rollup$cui_final == selected_id(), ]
     })
     
-    ## Update checkboxinput based on selected rows in table=========================
-    observe({
-      print("checkboxUpdateBySelectedRows")
-      checkboxUpdateBySelectedRows(input_rows(), df_input(), session)
-    })
-    
-    
-    
-    ## downloading table================================================
-    output$downloadData <- WriteData(df_output())
-    
-    getDesc <- function(x){
-      dict.combine$term[match(x, dict.combine$id)]
-    }
-    
-    # filter category ===============================
-    
-    categories <- reactive({
-      print("categories")
-      print(unique(df_edges_cutted_cos()$category))
-      sort(unique(df_edges_cutted_cos()$category))
-    })
-    
-    observe({
-      # req(categories())
-      print("updateAwesomeCheckboxGroup")
-      print(categories())
-      shinyWidgets::updateAwesomeCheckboxGroup(
-        session = session,
-        inputId = "filter_category",
-        label = "Filter nodes by category:",
-        choices = categories(),
-        selected = categories())
-    })
-    
-    observeEvent(input$btn_deselect_category, {
-      shinyWidgets::updateAwesomeCheckboxGroup(
-        session = session,
-        inputId = "filter_category",
-        choices = levels(dict.combine$category),
-        selected = NULL)
-    })
-    
-    observeEvent(input$btn_selectall_category, {
-      shinyWidgets::updateAwesomeCheckboxGroup(
-        session = session,
-        inputId = "filter_category",
-        choices = levels(dict.combine$category),
-        selected = levels(dict.combine$category))
-    })
-    
-    
-    # bookmark ======================================
-    
-    observeEvent(input$bookmark, {
-      # print(attr_nodes())
-      session$doBookmark()
-    })
+    output$rollup_tb_details <- reactable::renderReactable(reactable::reactable({
+      rollup_selected()[, -1]
+    },
+    bordered = TRUE,
+    details = function(index) {
+      if(!is.null(cui_sy)){
+        cui <- rollup_selected()$cui[index]
+        print("details for table")
+        print(cui)
+        if(cui %in% cui_sy$id){
+          htmltools::div(
+            "Synonyms of ", rollup_selected()$cui[index], ":",
+            htmltools::tags$pre(paste(sort(cui_sy$synonyms[cui_sy$id == rollup_selected()$cui[index]]), collapse = "\n")),
+            width = "300px"
+          )
+        }
+      }
+    },
+    pagination = FALSE)
+    )
     
     # color picker  =================================
-    
+    colors<-c("#FBD51C","#D700FE","#00FDD7","#FD0D2E","#FC844B","#E9DBF8","#0DA7FB","#85FA00",
+              "#FF0DC1","#C7ED9B","#D2A27F","#FF96EB","#D82668","#45E3FD","#0D9600","#7AB9A8",
+              "#B9ADFC","#FD8C9D","#63495A","#D2EF22","#AD70FB","#26FD8D","#B800B9","#8D880D",
+              "#0047BB","#972A16","#D292AC","#006581","#85224D","#32511C","#6D2A95","#352EFE")
     output$ui_color <- renderUI({
       n <- 1
       colors_group <- NULL
@@ -627,7 +469,51 @@ app_server <- function(db_path, directed){
       data.frame("group" = names(c), "color.background" = c)
     })
     
-
+    # shape picker ====
+    output$ui_shape <- renderUI({
+      tagList(column(6, 
+        shinyWidgets::pickerInput(
+          inputId = "shape1",
+          label = attrs$attr_nodes_type$type[1], 
+          choices = c("square", "triangle", "box", "circle", "dot", "star",
+                      "ellipse", "database", "text", "diamond"),
+          selected = attrs$attr_nodes_type$shape[1],
+          choicesOpt = list(
+            icon = c("fa fa-square", 
+                     "fa fa-mountain", 
+                     "fa fa-square-plus", 
+                     "fa fa-circle-info", 
+                     "fa fa-circle", 
+                     "fa fa-star",
+                     "fa fa-circle-question", 
+                     "fa fa-database", 
+                     "fa fa-font", 
+                     "fa diamond")),
+          options = list(
+            `icon-base` = "")
+        )),column(6, 
+        shinyWidgets::pickerInput(
+          inputId = "shape2",
+          label = attrs$attr_nodes_type$type[2], 
+          choices = c("square", "triangle", "box", "circle", "dot", "star",
+                      "ellipse", "database", "text", "diamond"), 
+          selected = attrs$attr_nodes_type$shape[2],
+          choicesOpt = list(
+            icon = c("fa fa-square", 
+                     "fa fa-mountain", 
+                     "fa fa-square-plus", 
+                     "fa fa-circle-info", 
+                     "fa fa-circle", 
+                     "fa fa-star",
+                     "fa fa-circle-question", 
+                     "fa fa-database", 
+                     "fa fa-font", 
+                     "fa diamond")),
+          options = list(
+            `icon-base` = "")
+        )))
+    })
+  
   }
-  return(server)
+return(server)
 }

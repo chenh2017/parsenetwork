@@ -66,7 +66,10 @@ cui2db <- function(dict_cui, db){
   
   dict_cui$type = "NLP"
   dict_cui$label = dict_cui$id
-  dict_cui$term[dict_cui$term==""] = dict_cui$label[dict_cui$term==""]
+  # if("" %in% dict_cui$term){
+  #   dict_cui$term[dict_cui$term==""] = dict_cui$label[dict_cui$term==""]
+  # }
+  
   dict_cui$term_s = dict_cui$term
   
   dict_cui$group = dict_cui$group1
@@ -121,39 +124,6 @@ readDB <- function(sql, tname, db){
     print(paste0(tname, " is't in ", db))
     NULL
   }
-}
-
-
-getData <- function(tname, db, n = 0, id = NULL){
-  if (n > 0){
-    sql <- paste0("SELECT * FROM ", tname, " LIMIT 1 OFFSET ", n-1, ";")
-  } else if (!is.null(id)){
-    sql <- paste0("SELECT * FROM ", tname, " WHERE id='", id, "';")
-  } else {
-    sql <- paste0("SELECT * FROM ", tname, ";")
-  }
-  readDB(sql, tname, db)
-}
-
-getCosFromDB <- function(n, ids, db){
-  if(!is.numeric(n)){
-    n <- ids$index[ids$id == n]
-  }
-  data <- getData("edge", db, n = n)
-  if(grepl("|", data$to, fixed = TRUE)){
-    Reduce(rbind, Map(function(x){
-      data.frame(from = n,
-                 to = strsplit(unlist(strsplit(data$to, "|", fixed = TRUE)), ";")[[x]],
-                 cos = as.numeric(strsplit(unlist(strsplit(data$cos, "|", fixed = TRUE)), ";")[[x]]),
-                 direction = x,
-                 row.names = NULL)}, 1:2))
-  } else{
-    data.frame(from = ids$id[n],
-               to = ids$id[as.numeric(strsplit(data$to, ";")[[1]])],
-               cos = as.numeric(strsplit(data$cos, ";")[[1]]),
-               row.names = NULL)
-  }
-  
 }
 
 getDetailsFromDB <- function(db, id){
